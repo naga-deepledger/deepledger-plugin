@@ -15,7 +15,10 @@
         "name": "DeepLedger",
         "email": "support@deepledger.ai"
       },
-      "source": ".",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/naga-deepledger/deepledger-plugin.git"
+      },
       "category": "productivity"
     }
   ]
