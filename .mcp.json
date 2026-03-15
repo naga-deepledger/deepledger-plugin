@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "deepledger": {
+      "type": "sse",
+      "url": "https://agent.deepledger.ai/sse"
+    }
+  }
+}
