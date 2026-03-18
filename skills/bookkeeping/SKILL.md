@@ -102,10 +102,10 @@ Display a clean proposal with:
 | Field | Default | Override |
 |-------|---------|---------|
 | Date | Today (if not specified and transaction is recent) | User specifies a date |
-| Payment method | CreditCard for <$500, Check for ≥$500 | User specifies method |
+| Payment method | None — leave blank unless user specifies | User says "by card", "by check", etc. |
 | Deposit account | Undeposited Funds (for received payments) | User specifies account |
 | Memo | Auto-generated from description | User provides memo |
-| Category | Vendor's most recent pattern | User requests different account |
+| Category | Step 1: vendor history → Step 2: description + vendor name → Step 3: ask | User requests different account |
 
 ## Capitalization Threshold
 

@@ -51,9 +51,13 @@ Steps:
 
 Smart defaults (apply without asking):
 - Date not specified → today
-- Payment method not specified → CreditCard for <$500, Check for ≥$500
+- Payment method → only infer when user specifies ("by card", "check", etc.);
+  otherwise leave blank for user to confirm in proposal
 - Memo → auto-generate from transaction description
 - Under $5,000 → always expense (don't ask about capitalization)
+- Category → vendor history first, then description keywords, then
+  single-purpose vendor name; ask ONLY for multi-purpose vendors
+  (Amazon, Costco, etc.) when description is vague
 
 Only ask about:
 - Purchases over $5,000: "Fixed asset or expense?"

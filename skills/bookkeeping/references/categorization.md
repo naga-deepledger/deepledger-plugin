@@ -24,53 +24,80 @@ which accounts were used in the last 3-5 transactions.
 - **No history (new vendor/customer):**
   Proceed to Step 2.
 
-### Step 2: Infer from Vendor Name and Description
+### Step 2: Infer from Description + Vendor Name Together
 
-For new vendors with no history, use intelligent inference:
+For new vendors with no history, use BOTH the transaction description
+AND the vendor name to determine the account. The description the user
+provides is the strongest signal — it tells you what was actually purchased.
 
-| Vendor Name Pattern | Auto-Assign Category |
-|---------------------|---------------------|
-| Staples, Office Depot, Office Max | Office Supplies |
-| Amazon (unless context says otherwise) | Office Supplies |
-| Uber, Lyft, taxi services | Travel |
-| Airlines, Hotels, Airbnb | Travel |
-| Restaurants, DoorDash, Grubhub | Meals & Entertainment |
-| Google Ads, Facebook Ads, ad agencies | Advertising/Marketing |
-| AWS, Azure, Google Cloud, Heroku | Software/SaaS |
-| Adobe, Slack, Zoom, GitHub, Notion | Software/SaaS |
-| AT&T, Verizon, Comcast, internet providers | Utilities |
-| Electric co, Gas co, Water utility | Utilities |
-| Insurance carriers, State Farm, Geico | Insurance |
-| Law firms, CPA firms, consultants | Professional Services |
-| Payroll providers, ADP, Gusto | Payroll |
-| Landlord, property management, "rent" | Rent/Lease |
+**Description keywords take priority over vendor name:**
 
-If the vendor name or transaction description clearly matches one of these
-patterns, auto-assign without asking. Note in proposal: "(inferred from
-vendor name)"
+| Description Contains | Category |
+|---------------------|----------|
+| "supplies", "office supplies", "toner", "paper" | Office Supplies |
+| "software", "subscription", "license", "SaaS" | Software/SaaS |
+| "hosting", "server", "cloud", "infrastructure" | Software/SaaS |
+| "travel", "flight", "hotel", "airfare", "lodging" | Travel |
+| "ride", "taxi", "transportation" | Travel |
+| "meal", "lunch", "dinner", "food", "catering" | Meals & Entertainment |
+| "insurance", "premium", "coverage", "policy" | Insurance |
+| "legal", "attorney", "consulting", "advisory" | Professional Services |
+| "accounting", "audit", "tax preparation" | Professional Services |
+| "advertising", "marketing", "ad spend", "campaign" | Advertising/Marketing |
+| "rent", "lease", "office space" | Rent/Lease |
+| "electric", "gas", "water", "internet", "phone" | Utilities |
+| "payroll", "wages", "salary" | Payroll |
+| "repair", "maintenance", "fix" | Repairs & Maintenance |
+| "training", "course", "conference", "seminar" | Training & Education |
 
-### Step 3: Infer from Transaction Description
+**Then use vendor name — but only for single-purpose vendors:**
 
-If the vendor name isn't recognizable, look at the description/memo:
+Vendors fall into two categories:
 
-- Contains "supplies", "office" → Office Supplies
-- Contains "software", "subscription", "license" → Software/SaaS
-- Contains "travel", "flight", "hotel" → Travel
-- Contains "meal", "lunch", "dinner", "food" → Meals & Entertainment
-- Contains "insurance" → Insurance
-- Contains "legal", "attorney", "consulting" → Professional Services
-- Contains "advertising", "marketing", "ad spend" → Advertising/Marketing
-- Contains "rent", "lease" → Rent/Lease
-- Contains "utility", "electric", "gas", "water", "internet" → Utilities
+**Single-purpose vendors (safe to infer from name alone):**
+These vendors sell ONE thing. The name IS the category.
 
-### Step 4: Ask Only If Genuinely Ambiguous
+| Vendor | Category | Why Safe |
+|--------|----------|----------|
+| Uber, Lyft | Travel | Only sell rides |
+| United Airlines, Delta, Southwest | Travel | Only sell flights |
+| Marriott, Hilton, Airbnb | Travel | Only sell lodging |
+| DoorDash, Grubhub, UberEats | Meals & Entertainment | Only deliver food |
+| Google Ads, Facebook Ads | Advertising/Marketing | Ad-specific products |
+| Slack, Zoom, GitHub, Notion, Figma | Software/SaaS | Single software product |
+| Adobe, Salesforce, HubSpot | Software/SaaS | Software companies |
+| ADP, Gusto, Paychex | Payroll | Payroll processors |
+| State Farm, Geico, Allstate | Insurance | Insurance carriers |
+| AT&T, Verizon, Comcast, T-Mobile | Utilities | Telecom/internet only |
+| Office Depot, Office Max, Staples | Office Supplies | Office supply stores |
 
-If NONE of the above steps yield a clear answer, then ask. Show the user
-the available accounts from qbMasterData with AcctNum and let them choose.
+**Multi-purpose vendors (NEVER infer from name alone — need description):**
+These vendors sell many categories of things. The vendor name tells you
+nothing about what was purchased.
+
+| Vendor | Could Be | What To Do |
+|--------|----------|------------|
+| Amazon | Office Supplies, Software, Inventory, Equipment, Books | MUST use description or ask |
+| Costco | Office Supplies, Meals, Inventory, Equipment | MUST use description or ask |
+| Walmart | Office Supplies, Meals, Inventory, Equipment | MUST use description or ask |
+| Target | Office Supplies, Meals, Equipment | MUST use description or ask |
+| Best Buy | Software, Equipment, Office Supplies | MUST use description or ask |
+| Google | Advertising, Software/SaaS, Cloud hosting | MUST use description or ask |
+| Apple | Software, Equipment, Subscription | MUST use description or ask |
+| Microsoft | Software, Cloud hosting, Equipment | MUST use description or ask |
+
+For multi-purpose vendors: if the user's description makes the category
+clear (e.g., "Amazon for office supplies"), use that. If the description
+is vague (e.g., just "Amazon $150"), ask.
+
+### Step 3: Ask Only If Genuinely Ambiguous
+
+If NONE of the above yields a clear answer, ask. Show the user the
+available accounts from qbMasterData with AcctNum and let them choose.
 
 Frame it concisely: "I can't determine the right category for this $X
 payment to [vendor]. Which account should I use?" then list the top 5
-most likely options.
+most likely options based on what you do know.
 
 ## Categorization Consistency
 
@@ -78,24 +105,28 @@ The most important rule: categorize consistently. If "Staples" purchases
 have been going to "Office Supplies" (AcctNum 6000), new Staples purchases
 MUST go to "Office Supplies" unless the user explicitly says otherwise.
 
+**History always wins.** Even if "Amazon" is a multi-purpose vendor, if
+the company's last 5 Amazon transactions all went to "Office Supplies",
+the next one should default there too (with a note in the proposal).
+
 ## Common Account Mappings
 
 These are typical mappings for small businesses. Always verify against
 the specific company's chart of accounts via qbMasterData.
 
 ### Expense Accounts (typical)
-| Category | Common Vendors | Typical AcctNum Range |
-|----------|----------------|----------------------|
-| Office Supplies | Staples, Office Depot, Amazon | 6000-6099 |
-| Rent/Lease | Landlord, Property Management | 6100-6199 |
-| Utilities | Electric co, Gas co, Water, Internet | 6200-6299 |
-| Insurance | Insurance carriers | 6300-6399 |
-| Professional Services | Lawyers, CPAs, Consultants | 6400-6499 |
-| Software/SaaS | Tech vendors | 6500-6599 |
-| Travel | Airlines, Hotels, Uber | 6600-6699 |
-| Meals & Entertainment | Restaurants | 6700-6799 |
-| Advertising/Marketing | Google, Facebook, agencies | 6800-6899 |
-| Payroll | Payroll providers | 6900-6999 |
+| Category | Typical AcctNum Range |
+|----------|----------------------|
+| Office Supplies | 6000-6099 |
+| Rent/Lease | 6100-6199 |
+| Utilities | 6200-6299 |
+| Insurance | 6300-6399 |
+| Professional Services | 6400-6499 |
+| Software/SaaS | 6500-6599 |
+| Travel | 6600-6699 |
+| Meals & Entertainment | 6700-6799 |
+| Advertising/Marketing | 6800-6899 |
+| Payroll | 6900-6999 |
 
 ### Income Accounts (typical)
 | Category | Typical AcctNum Range |

@@ -40,14 +40,15 @@ Act WITHOUT asking when you can determine:
 - Transaction type (expense vs bill vs invoice — infer from context)
 - Date (use the date mentioned; default to today if recent/unspecified)
 - Vendor/customer (single match or obvious fuzzy match)
-- Account/category (clear from vendor history or transaction description)
-- Payment method (infer from context: "paid" = expense, "received bill" = bill)
+- Account/category (clear from vendor history, transaction description, or
+  single-purpose vendor name — but NOT from multi-purpose vendors like Amazon)
+- Payment method (only when user specifies: "by card", "by check", etc.)
 - Capitalization (under $5,000 = always expense)
 - Duplicates (if no matches found, proceed silently)
 
 Ask ONLY when:
 - Multiple vendors/customers match and the correct one is ambiguous
-- No vendor history AND the expense category is genuinely unclear
+- No vendor history AND description doesn't clarify AND vendor is multi-purpose
 - Amount is missing or ambiguous
 - Purchase is over $5,000 (fixed asset vs expense decision)
 - Potential duplicate found (show it, ask if new)
@@ -65,10 +66,12 @@ Ask ONLY when:
 
 **Smart Defaults:**
 - Date not specified → use today's date
-- Payment method not specified → infer "CreditCard" for expenses under $500,
-  "Check" for larger amounts (user can override in confirmation)
+- Payment method not specified → leave blank in proposal, let user choose
+  (only infer if user says "by card", "by check", "paid cash", etc.)
 - Vendor has consistent history → auto-select that category
-- New vendor, obvious category (e.g., "Uber" → Travel) → auto-select
+- New single-purpose vendor (e.g., "Uber" → Travel) → auto-select
+- New multi-purpose vendor (e.g., "Amazon") → use description to categorize,
+  or ask if description is vague
 - Memo not provided → auto-generate from transaction description
 
 **Tool Selection — Infer Automatically:**

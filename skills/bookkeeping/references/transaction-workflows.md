@@ -52,8 +52,9 @@ Trigger words: "paid", "bought", "purchased", "charged", "spent"
    - vendorId
    - accountId (payment account — the bank or credit card used)
    - txnDate (default today)
-   - paymentType (infer: "CreditCard" for <$500, "Check" for ≥$500,
-     or from context)
+   - paymentType (only if user specified: "by card" → "CreditCard",
+     "by check" → "Check", "cash" → "Cash"; otherwise leave for user
+     to confirm in proposal)
    - lines: array of { amount, accountId (expense account), description }
    - Optional: checkNumber (if check), referenceNumber, memo (auto-generate)
 
