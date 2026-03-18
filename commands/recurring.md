@@ -1,6 +1,6 @@
 ---
 description: Manage recurring/scheduled transactions
-allowed-tools: ["mcp__browser__*", "mcp__plugin_deepledger_deepledger__*"]
+allowed-tools: ["mcp__playwright__*", "mcp__plugin_deepledger_deepledger__*"]
 argument-hint: <create|list|edit|delete> [details]
 ---
 
