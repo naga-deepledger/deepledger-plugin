@@ -16,6 +16,7 @@ Before creating ANY of these transaction types:
 - qbJournalEntry
 - qbDeposit
 - qbRefundReceipt
+- qbCredit
 
 Do NOT need to check for:
 - qbBillPayment (linked to specific bill)

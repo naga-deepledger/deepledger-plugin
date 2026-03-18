@@ -62,6 +62,7 @@ For purchases over $5,000 (or organization's threshold), ask:
 | Bank deposit | qbDeposit |
 | Customer refund | qbRefundReceipt |
 | Adjusting entry | qbJournalEntry |
+| Vendor credit / customer credit memo | qbCredit |
 | Void/delete transaction | qbVoidTransaction |
 | Attach receipt/document | qbGetUploadUrl |
 

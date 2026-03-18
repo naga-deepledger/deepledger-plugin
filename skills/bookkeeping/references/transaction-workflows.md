@@ -121,6 +121,26 @@ Use when: Refunding a customer for a returned item or cancelled service.
    - txnDate
    - lines: array of { amount, itemId or accountId, description }
 
+### Issuing a Vendor Credit or Customer Credit Memo (qbCredit)
+
+Use when: Vendor issued a credit for returned goods, billing error, or
+overpayment; OR issuing a credit memo to a customer.
+
+1. Determine if this is a vendor credit or customer credit memo
+2. Look up vendor or customer via qbMasterData
+3. Look up the relevant accounts
+4. Check for duplicates: qbFetchTransactions with same entity, date, amount
+5. If linked to a specific bill or invoice, fetch it via qbFetchTransactions
+6. Propose: entity, date, line items, accounts, total credit amount
+7. On confirmation, call qbCredit with:
+   - vendorId or customerId
+   - txnDate
+   - lines: array of { amount, accountId, description }
+   - Optional: memo, referenceNumber, linkedTxnId (bill or invoice to apply against)
+
+**Note:** Vendor credits reduce what you owe; customer credit memos reduce
+what the customer owes. Ensure the user understands the direction of the credit.
+
 ## General Ledger Workflows
 
 ### Journal Entry (qbJournalEntry)

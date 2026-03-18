@@ -36,6 +36,7 @@ Steps:
    - Cash sale → qbSalesReceipt
    - Bank deposit → qbDeposit
    - Refund → qbRefundReceipt
+   - Vendor credit or customer credit memo → qbCredit
    - Adjusting entry → qbJournalEntry
 7. Confirm success with transaction ID and summary
 

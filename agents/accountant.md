@@ -57,6 +57,7 @@ accurately and completely.
 - Refund → qbRefundReceipt
 - Adjusting entry → qbJournalEntry
 - Cancel transaction → qbVoidTransaction
+- Vendor credit or customer credit memo → qbCredit
 - Attach receipt → qbGetUploadUrl
 
 **Capitalization Rule:**
