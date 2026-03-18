@@ -218,7 +218,8 @@ a bank account and a credit card (e.g., credit card payment).
 Trigger words: "transfer", "move money", "transfer from savings", "pay credit card",
 "moved funds", "wire between accounts"
 
-**Note:** QuickBooks doesn't have a standalone "Transfer" tool via MCP, so we
+**Note:** The QBO API has a native Transfer entity (FromAccountRef, ToAccountRef,
+Amount). If the MCP server exposes a qbTransfer tool, prefer that. Otherwise,
 use a Journal Entry with a specific debit/credit pattern between bank accounts.
 
 1. Identify source and destination accounts:
@@ -249,18 +250,38 @@ use a Journal Entry with a specific debit/credit pattern between bank accounts.
 Use when: Creating a preliminary price proposal for a customer before invoicing.
 Trigger words: "estimate", "quote", "proposal", "bid", "price quote"
 
-**Note:** If the MCP tool qbEstimate is not available, inform the user and offer
-alternatives: create the estimate outside QB and record the invoice when accepted,
-or create a draft invoice marked clearly as "ESTIMATE" in the memo.
+The QBO API fully supports Estimates (full CRUD). If the MCP server exposes
+a qbEstimate tool, use it with:
+- customerId
+- txnDate (default today)
+- expirationDate (default 30 days from txnDate)
+- lines: array of { amount, itemId or accountId, description, quantity, rate }
+- Optional: estimateNumber, memo, class, salesTermId
+
+If no qbEstimate MCP tool is available, offer alternatives:
+- Create the estimate in QBO UI
+- Create a draft invoice marked "ESTIMATE — DO NOT PAY" in the memo
+
+**Conversion:** When accepted, convert to invoice (copy line items).
 
 ### Purchase Orders
 
 Use when: Creating a purchase commitment to a vendor before receiving goods/bill.
 Trigger words: "purchase order", "PO", "order from vendor"
 
-**Note:** If the MCP tool qbPurchaseOrder is not available, inform the user and
-suggest: record the bill when goods/services arrive instead. Track the commitment
-via a memo or external document attached via qbGetUploadUrl.
+The QBO API fully supports Purchase Orders (full CRUD). If the MCP server
+exposes a qbPurchaseOrder tool, use it with:
+- vendorId
+- txnDate (default today)
+- lines: array of { amount, itemId or accountId, description, quantity, rate }
+- Optional: PONumber, memo, shipAddr, expectedDate
+
+If no qbPurchaseOrder MCP tool is available, offer alternatives:
+- Create the PO in QBO UI
+- Record the bill (qbBill) when goods arrive instead
+- Track commitment via memo or attached document (qbGetUploadUrl)
+
+**Receiving:** When goods arrive, convert PO to bill (copy line items to qbBill).
 
 ## Edge Cases
 

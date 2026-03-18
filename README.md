@@ -26,10 +26,16 @@ claude --plugin-dir ./deepledger-plugin
 
 ## Available Commands
 
+### API-Powered Commands (fast, reliable)
+
+These use the QuickBooks API via DeepLedger — no browser needed.
+
 | Command | Description |
 |---------|-------------|
 | `/record` | Record a transaction (expense, bill, invoice, payment, etc.) |
 | `/transfer` | Transfer money between bank accounts or pay a credit card |
+| `/estimate` | Create an estimate or quote for a customer |
+| `/purchase-order` | Create a purchase order for a vendor |
 | `/pnl` | Profit & Loss with variance analysis |
 | `/balance-sheet` | Balance sheet snapshot with key ratios |
 | `/cash-flow` | Cash flow statement and runway analysis |
@@ -40,6 +46,49 @@ claude --plugin-dir ./deepledger-plugin
 | `/budget` | Budget vs actual analysis (uses historical baseline) |
 | `/vendor-expenses` | Vendor spend analysis and trends |
 | `/customer-income` | Customer revenue analysis and concentration |
+
+### Browser-Powered Commands (requires QBO login)
+
+These features have NO QuickBooks API — they use browser automation to
+interact with the QBO UI directly. Requires the user to be logged into
+QuickBooks Online.
+
+| Command | Description |
+|---------|-------------|
+| `/reconcile` | Reconcile a bank or credit card account |
+| `/recurring` | Create, list, edit, or delete recurring transactions |
+| `/bank-rules` | Manage bank feed auto-categorization rules |
+
+## Architecture
+
+DeepLedger uses two integration channels:
+
+```
+User Request
+    ↓
+Plugin decides: API or UI task?
+    ↓
+┌─────────────────┐    ┌──────────────────┐
+│ DeepLedger MCP  │    │ Chrome MCP       │
+│ (QBO API)       │    │ (Browser)        │
+├─────────────────┤    ├──────────────────┤
+│ Transactions    │    │ Reconciliation   │
+│ Reports         │    │ Bank Feeds       │
+│ Master Data     │    │ Recurring Txns   │
+│ Attachments     │    │ Bank Rules       │
+│ Estimates & POs │    │ Budgets (native) │
+└────────┬────────┘    └────────┬─────────┘
+         │                      │
+         ▼                      ▼
+     QBO REST API          QBO Web UI
+```
+
+**API-powered** (fast, reliable): All transaction recording, reporting,
+and master data management. This covers ~90% of daily bookkeeping.
+
+**Browser-powered** (slower, requires login): Bank reconciliation, recurring
+transactions, bank rules, and other features that Intuit has not exposed
+via API. These require the user to be logged into QuickBooks Online.
 
 ## How It Works
 

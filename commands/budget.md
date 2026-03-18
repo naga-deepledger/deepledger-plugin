@@ -8,9 +8,12 @@ Generate a budget vs actual analysis for: "$ARGUMENTS"
 
 Default to current month if not specified.
 
-**Note:** QuickBooks Online doesn't have a native budget API accessible via MCP.
-This command uses historical data to create a baseline "expected" budget and
-compares actual performance against it.
+**Note:** QuickBooks Online budgets exist in the UI but have NO API access.
+Budgets cannot be read or written via the QBO API. This command uses
+historical data to create a baseline "expected" budget and compares actual
+performance against it. If the user has set up budgets in QBO and wants to
+reference them, they'll need to provide the budget numbers manually or use
+the `/reconcile` browser command to view them in the QBO UI.
 
 Steps:
 

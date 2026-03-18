@@ -3,6 +3,10 @@
     "deepledger": {
       "type": "sse",
       "url": "https://agent.deepledger.ai/sse"
+    },
+    "browser": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-server-puppeteer"]
     }
   }
 }

@@ -86,8 +86,11 @@ Ask ONLY when:
 - "credit", "credit memo", "vendor credit" → qbCredit
 - "adjust", "reclassify", "correct" → qbJournalEntry
 - "transfer", "move money", "pay credit card" → qbJournalEntry (transfer pattern)
+- "estimate", "quote", "proposal", "bid" → qbEstimate (or draft invoice)
+- "purchase order", "PO", "order from" → qbPurchaseOrder (or note for user)
 - "void", "cancel", "delete" → qbVoidTransaction
 - "attach", "receipt", "upload" → qbGetUploadUrl
+- "reconcile", "bank feed", "recurring" → delegate to browser-accountant agent
 
 **Transfer Rule:**
 Moving money between the company's own accounts (bank-to-bank, paying

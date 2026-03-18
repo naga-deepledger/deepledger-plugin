@@ -94,9 +94,26 @@ Display a clean proposal with:
 | Customer refund | qbRefundReceipt |
 | Adjusting entry | qbJournalEntry |
 | Bank transfer / credit card payment | qbJournalEntry (transfer pattern) |
+| Estimate / quote | qbEstimate (if available, else draft invoice) |
+| Purchase order | qbPurchaseOrder (if available, else note for user) |
 | Vendor credit / customer credit memo | qbCredit |
 | Void/delete transaction | qbVoidTransaction |
 | Attach receipt/document | qbGetUploadUrl |
+
+### Browser-Only Features (no API)
+
+These features require browser automation via Chrome MCP and cannot be
+done through the QBO API:
+
+| Feature | Command | Why No API |
+|---------|---------|-----------|
+| Bank reconciliation | `/reconcile` | Intuit doesn't expose reconciliation API |
+| Recurring transactions | `/recurring` | No CRUD API for scheduled transactions |
+| Bank rules | `/bank-rules` | No API for auto-categorization rules |
+| Bank feed matching | (via `/reconcile`) | Bank connections are UI-only |
+| Budget creation | (via QBO UI) | No budget read/write API |
+| Audit log | (via QBO UI) | No audit log API |
+| 1099 tracking | (via QBO UI) | No 1099 API in standard QBO |
 
 ## Smart Defaults
 
@@ -152,3 +169,5 @@ trails but do not require them.
   receipts, and purchases; tax-exempt scenarios
 - **`references/error-recovery.md`** — API error handling, edge cases
   (negative amounts, partial payments, backdated transactions, etc.)
+- **`references/qbo-api-capabilities.md`** — Complete matrix of what's
+  available via API vs. browser-only, MCP tool mapping, rate limits

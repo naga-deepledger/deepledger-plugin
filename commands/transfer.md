@@ -31,6 +31,11 @@ Steps:
    - Include descriptive memo
 6. Confirm success with transaction ID
 
+**Note on QBO Transfer entity:** The QuickBooks API has a native Transfer
+entity (FromAccountRef, ToAccountRef, Amount) which is cleaner than using
+a Journal Entry. If a `qbTransfer` MCP tool becomes available, prefer it
+over the JE workaround. Until then, the JE pattern works correctly.
+
 **Critical:** Transfers are NOT expenses. Moving money between your own
 accounts doesn't change total assets (just shifts between accounts).
 Credit card payments reduce both cash and credit card liability.
