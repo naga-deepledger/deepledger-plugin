@@ -6,17 +6,22 @@ argument-hint: <create|list|edit|delete> [details]
 
 Manage recurring transactions in QuickBooks: "$ARGUMENTS"
 
-**Important:** Recurring transactions are NOT available via the QuickBooks API.
-This command uses browser automation to interact with the QBO UI directly.
+**API Status:** Recurring transactions are **read-only via API** — you can
+query and list them, but cannot create, update, or delete. Creating and
+editing requires browser automation via the QBO UI.
 
-**Prerequisites:** User must be logged into QuickBooks Online in their browser.
+**Prerequisites for create/edit/delete:** User must be logged into QuickBooks
+Online in their browser.
 
 ## Operations
 
-### List Recurring Transactions
-1. Navigate to Settings (gear icon) → Recurring Transactions
-2. Take screenshot of the list
-3. Present a table: Type, Template Name, Vendor/Customer, Amount, Frequency, Next Date
+### List Recurring Transactions (API — no browser needed)
+1. Query recurring transactions via qbFetchTransactions (if RecurringTransaction
+   entity is supported) or qbReports
+2. If API access works, present the list directly — no browser needed
+3. If API doesn't expose recurring transactions, fall back to browser:
+   Navigate to Settings (gear icon) → Recurring Transactions, take screenshot
+4. Present a table: Type, Template Name, Vendor/Customer, Amount, Frequency, Next Date
 
 ### Create Recurring Transaction
 1. Determine transaction type from user's description:

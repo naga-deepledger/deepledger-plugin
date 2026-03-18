@@ -105,15 +105,15 @@ Display a clean proposal with:
 These features require browser automation via Chrome MCP and cannot be
 done through the QBO API:
 
-| Feature | Command | Why No API |
+| Feature | Command | API Status |
 |---------|---------|-----------|
-| Bank reconciliation | `/reconcile` | Intuit doesn't expose reconciliation API |
-| Recurring transactions | `/recurring` | No CRUD API for scheduled transactions |
-| Bank rules | `/bank-rules` | No API for auto-categorization rules |
-| Bank feed matching | (via `/reconcile`) | Bank connections are UI-only |
-| Budget creation | (via QBO UI) | No budget read/write API |
-| Audit log | (via QBO UI) | No audit log API |
-| 1099 tracking | (via QBO UI) | No 1099 API in standard QBO |
+| Bank reconciliation | `/reconcile` | No API. Can query reconciliation status per transaction but cannot perform reconciliation |
+| Recurring txn create/edit | `/recurring` | **Read-only API** — can list existing, but create/edit/delete is browser-only |
+| Bank rules | `/bank-rules` | No API |
+| Bank feed matching | (via `/reconcile`) | No API. Bank feed items ("For Review") not accessible |
+| Budget create/edit | (via QBO UI) | **Read-only API** — can read existing budgets, but create/edit is browser-only |
+| Audit log | (via QBO UI) | No API |
+| 1099 filing | (via QBO UI) | Vendor1099 flag settable via API; form generation/filing is UI-only |
 
 ## Smart Defaults
 
