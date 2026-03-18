@@ -1,8 +1,13 @@
 # DeepLedger Plugin for Claude Code
 
-AI bookkeeper with QuickBooks Online integration. Record transactions,
-generate financial reports, and get actionable business insights — all
-through natural language.
+Autonomous AI bookkeeper with QuickBooks Online integration. Record
+transactions, generate financial reports, and get actionable business
+insights — all through natural language with minimal back-and-forth.
+
+DeepLedger acts like an expert bookkeeper: it infers transaction types,
+auto-categorizes expenses based on vendor history, checks for duplicates
+silently, and only asks questions when the answer would affect accounting
+accuracy.
 
 ## Installation
 
@@ -33,42 +38,93 @@ claude --plugin-dir ./deepledger-plugin
 | `/vendor-expenses` | Vendor spend analysis and trends |
 | `/customer-income` | Customer revenue analysis and concentration |
 
+## How It Works
+
+### Autonomous Bookkeeping
+
+Just describe what happened — DeepLedger handles the rest:
+
+```
+"I paid $250 to Staples for office supplies"
+```
+
+DeepLedger will automatically:
+- Identify this as a paid expense (→ qbExpense)
+- Find "Staples" in your vendor list
+- Check Staples' transaction history to determine the right expense account
+- Default to today's date
+- Check for duplicate transactions (silently — no noise if none found)
+- Present a ready-to-confirm proposal with all details filled in
+
+You just confirm and it's recorded.
+
+### Smart Inference
+
+DeepLedger infers intelligently and only asks when it matters:
+
+| Situation | What Happens |
+|-----------|-------------|
+| Single vendor match | Auto-selected, no question |
+| Vendor has history | Same account used, no question |
+| Date not specified | Defaults to today, no question |
+| No duplicates found | Proceeds silently, no question |
+| Multiple vendor matches | Asks which one (accounting accuracy) |
+| Purchase over $5,000 | Asks: asset or expense? (accounting accuracy) |
+| Potential duplicate found | Shows match, asks if new (prevents errors) |
+
+### Autonomous Financial Analysis
+
+Ask any financial question and get a complete answer in one shot:
+
+```
+"How is my business doing this quarter?"
+```
+
+DeepLedger will pull P&L, Balance Sheet, Cash Flow, and Aging reports,
+compare periods, calculate key metrics, drill into major variances,
+check for warning signs, and present everything with actionable
+recommendations — no follow-up prompts needed.
+
 ## Examples
 
 **Recording transactions:**
 ```
-"Record a $500 expense to Office Depot for supplies on March 10"
-"Create an invoice for Acme Corp — $2,500 for consulting services"
-"Pay the outstanding bill from our landlord"
+"I paid $250 to Staples for office supplies"
+"Got a $3,000 bill from our landlord for March rent"
+"Invoice Acme Corp $5,000 for consulting services"
+"Pay the outstanding bill from Office Depot"
 "Issue a credit memo to Johnson Inc for $300"
+"Record 5 transactions: $50 Uber, $120 dinner at Nobu, $200 AWS, $85 Zoom, $45 Staples"
 ```
 
 **Financial analysis:**
 ```
-"Show me this month's P&L compared to last month"
-"How is my business doing this quarter?"
-"Who owes us money?"
+"How is my business doing?"
+"Show me the P&L"
 "What's our cash runway?"
+"Who owes us money?"
+"Why are expenses up this month?"
 "Which vendors are we spending the most with?"
 "Show me revenue by customer for Q1"
 ```
 
-**Searching and investigating:**
+**Searching:**
 ```
-"Find all transactions over $1,000 this month"
-"Show me all payments to Amazon in the last 90 days"
-"What did we spend on software this quarter?"
+"Find all payments to Amazon this quarter"
+"Show me transactions over $1,000 this month"
+"What did we spend on software?"
 ```
 
 ## Safety Features
 
-All write operations (recording expenses, creating invoices, etc.) follow a
-strict **Analyze → Propose → Confirm → Execute** workflow:
+All write operations follow a strict **Analyze → Propose → Confirm → Execute**
+workflow:
 
 - Master data is verified before proposing any transaction
-- Duplicate checks run automatically before creating entries
+- Duplicate checks run automatically (silently if no matches found)
 - You must explicitly confirm before any transaction is recorded
 - Void/delete operations require additional explicit confirmation
+- Purchases over $5,000 trigger an asset-vs-expense question
 
 ## Requirements
 

@@ -1,4 +1,10 @@
-# Duplicate Detection — Methodology and Procedures
+# Duplicate Detection — Autonomous Methodology
+
+## Core Principle: Silent When Clear, Ask When Ambiguous
+
+Duplicate checking should be invisible to the user in the common case
+(no duplicates found). Only surface results when a potential match is
+detected and the user needs to make a decision.
 
 ## Why Check for Duplicates
 
@@ -23,39 +29,40 @@ Do NOT need to check for:
 - qbReceivePayment (linked to specific invoice)
 - qbVoidTransaction (modifying existing)
 
-## How to Check
+## Autonomous Duplicate Handling
 
-### Step 1: Query Existing Transactions
+### Step 1: Query Existing Transactions (silent)
 
 Use qbFetchTransactions with these filters:
 - **Vendor/Customer**: Same entity name
 - **Date range**: ±3 days from the intended transaction date
 - **Transaction type**: Same type if possible
 
-### Step 2: Compare Results
+### Step 2: Evaluate Results (autonomous decision)
 
-A potential duplicate exists if ALL of these match:
-- Same vendor or customer (exact or fuzzy name match)
-- Same date (±1 day for potential timezone differences)
-- Same total amount (±5% for rounding/tax differences)
+**No matches found:**
+→ Proceed silently. Do NOT tell the user "no duplicates found" — this
+  adds noise without value. Just move on to the proposal.
 
-### Step 3: Present to User
+**Exact match (same entity, same date, same amount within ±1%):**
+→ HIGH confidence duplicate. Show it to the user and ask:
+  "This appears to be a duplicate of [existing transaction]. Is this
+  a separate, new transaction?"
 
-If potential duplicates found, show them in a table:
-```
-Existing transactions that may be duplicates:
-| Date       | Type    | Vendor      | Amount  | ID    |
-|------------|---------|-------------|---------|-------|
-| 2026-03-13 | Expense | Staples     | $150.00 | #1234 |
-```
+**Near match (same entity, ±3 days, amount within ±5%):**
+→ MEDIUM confidence. Show it and ask:
+  "A similar transaction exists. Is this new or the same?"
+  Display the existing transaction details for comparison.
 
-Then ask: "A similar transaction already exists. Is this a new,
-separate transaction?"
+**Weak match (same entity only, different date/amount):**
+→ LOW confidence — NOT a duplicate. Proceed silently.
+  Recent transactions from the same vendor are expected and normal.
 
-### Step 4: Proceed or Abort
+### Step 3: Act on Decision
 
-- If user confirms it's new → proceed with creation
-- If user says it's a duplicate → abort and reference the existing one
+- User confirms it's new → proceed with creation
+- User says it's a duplicate → abort, reference the existing transaction
+- User doesn't respond clearly → ask once more, then wait
 
 ## Fuzzy Name Matching
 
@@ -65,7 +72,10 @@ Vendor/customer names may not match exactly:
 - "John's Plumbing" vs "Johns Plumbing LLC"
 
 When searching, use partial name matches. If the vendor/customer lookup
-returns multiple similar results, list them all.
+returns multiple similar results, select the closest match if it's
+obvious (e.g., "Office Depot" matches "Office Depot Inc"). Only ask
+when genuinely ambiguous (e.g., "Johnson" matches "Johnson LLC" and
+"Johnson & Associates" — two different entities).
 
 ## Amount Tolerance
 
