@@ -29,12 +29,15 @@ claude --plugin-dir ./deepledger-plugin
 | Command | Description |
 |---------|-------------|
 | `/record` | Record a transaction (expense, bill, invoice, payment, etc.) |
+| `/transfer` | Transfer money between bank accounts or pay a credit card |
 | `/pnl` | Profit & Loss with variance analysis |
 | `/balance-sheet` | Balance sheet snapshot with key ratios |
 | `/cash-flow` | Cash flow statement and runway analysis |
 | `/aging` | AR/AP aging report |
 | `/find` | Search transactions |
 | `/health-check` | Comprehensive financial health assessment |
+| `/close-books` | Month-end close checklist and validation |
+| `/budget` | Budget vs actual analysis (uses historical baseline) |
 | `/vendor-expenses` | Vendor spend analysis and trends |
 | `/customer-income` | Customer revenue analysis and concentration |
 
@@ -93,6 +96,8 @@ recommendations — no follow-up prompts needed.
 "Got a $3,000 bill from our landlord for March rent"
 "Invoice Acme Corp $5,000 for consulting services"
 "Pay the outstanding bill from Office Depot"
+"Transfer $5,000 from savings to checking"
+"Pay off the credit card from our checking account"
 "Issue a credit memo to Johnson Inc for $300"
 "Record 5 transactions: $50 Uber, $120 dinner at Nobu, $200 AWS, $85 Zoom, $45 Staples"
 ```
@@ -106,6 +111,8 @@ recommendations — no follow-up prompts needed.
 "Why are expenses up this month?"
 "Which vendors are we spending the most with?"
 "Show me revenue by customer for Q1"
+"Are we on budget this month?"
+"Close the books for February"
 ```
 
 **Searching:**

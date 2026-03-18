@@ -46,6 +46,7 @@ Steps:
    - Bank deposit → qbDeposit
    - Refund → qbRefundReceipt
    - Vendor credit or customer credit memo → qbCredit
+   - Bank transfer or credit card payment → qbJournalEntry (transfer pattern)
    - Adjusting entry → qbJournalEntry
 8. Confirm success with transaction ID and summary
 

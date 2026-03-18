@@ -211,6 +211,57 @@ Trigger words: "void", "cancel", "delete", "undo"
    - transactionId
    - syncToken
 
+### Bank Transfer (qbJournalEntry — Transfer Pattern)
+
+Use when: Moving money between the company's own bank accounts, or between
+a bank account and a credit card (e.g., credit card payment).
+Trigger words: "transfer", "move money", "transfer from savings", "pay credit card",
+"moved funds", "wire between accounts"
+
+**Note:** QuickBooks doesn't have a standalone "Transfer" tool via MCP, so we
+use a Journal Entry with a specific debit/credit pattern between bank accounts.
+
+1. Identify source and destination accounts:
+   - Look up both accounts via qbMasterData (type: "Account", accountType: "Bank" or "CreditCard")
+   - "Transfer from savings to checking" → debit Checking, credit Savings
+   - "Pay off credit card from checking" → debit Credit Card, credit Checking
+   - If only one account mentioned, ask which is the other
+2. Validate both accounts exist and are asset/liability accounts (Bank, CreditCard, OtherCurrentAsset)
+3. Check for duplicates silently (same amount, same date, same accounts)
+4. Propose: source account, destination account, amount, date (default today), memo
+5. On confirmation, call qbJournalEntry with:
+   - txnDate (default today)
+   - lines:
+     - { accountId: destinationAccountId, amount: transferAmount, type: "Debit", description: "Transfer from [source]" }
+     - { accountId: sourceAccountId, amount: transferAmount, type: "Credit", description: "Transfer to [destination]" }
+   - memo: "Transfer: [source] → [destination]"
+
+**Important distinctions:**
+- Transfer ≠ expense. Moving money between your own accounts is NOT an expense.
+  Never record a credit card payment as an expense — it's a transfer.
+- Transfer ≠ payment. Paying a vendor is a bill payment or expense, not a transfer.
+  Only use this workflow when both sides are the company's own accounts.
+- Credit card payments: Debit the Credit Card account (reduces liability),
+  Credit the Bank account (reduces cash). This is a transfer, not an expense.
+
+### Estimates and Quotes
+
+Use when: Creating a preliminary price proposal for a customer before invoicing.
+Trigger words: "estimate", "quote", "proposal", "bid", "price quote"
+
+**Note:** If the MCP tool qbEstimate is not available, inform the user and offer
+alternatives: create the estimate outside QB and record the invoice when accepted,
+or create a draft invoice marked clearly as "ESTIMATE" in the memo.
+
+### Purchase Orders
+
+Use when: Creating a purchase commitment to a vendor before receiving goods/bill.
+Trigger words: "purchase order", "PO", "order from vendor"
+
+**Note:** If the MCP tool qbPurchaseOrder is not available, inform the user and
+suggest: record the bill when goods/services arrive instead. Track the commitment
+via a memo or external document attached via qbGetUploadUrl.
+
 ## Edge Cases
 
 ### Transaction Date

@@ -93,6 +93,7 @@ Display a clean proposal with:
 | Bank deposit | qbDeposit |
 | Customer refund | qbRefundReceipt |
 | Adjusting entry | qbJournalEntry |
+| Bank transfer / credit card payment | qbJournalEntry (transfer pattern) |
 | Vendor credit / customer credit memo | qbCredit |
 | Void/delete transaction | qbVoidTransaction |
 | Attach receipt/document | qbGetUploadUrl |
@@ -145,3 +146,9 @@ trails but do not require them.
   methodology and fuzzy matching guidance
 - **`references/categorization.md`** — Account categorization rules,
   common mappings, and consistency patterns
+- **`references/recurring-transactions.md`** — Recurring transaction
+  detection, pattern matching, and missing transaction alerts
+- **`references/sales-tax.md`** — Sales tax handling for invoices,
+  receipts, and purchases; tax-exempt scenarios
+- **`references/error-recovery.md`** — API error handling, edge cases
+  (negative amounts, partial payments, backdated transactions, etc.)
