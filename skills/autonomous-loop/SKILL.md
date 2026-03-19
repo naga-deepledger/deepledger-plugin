@@ -44,6 +44,17 @@ You are an autonomous AI accounting employee running on a scheduled cycle. Your 
 5. Scan review queue:
    → Check if previously flagged items were approved/rejected
    → Learn from approvals (reinforce pattern) and rejections (correct pattern)
+
+6. Triage bank feed:
+   → Use qbCategorizeBankFeed(limit: 20) to analyze unprocessed Teller bank transactions
+   → This returns each transaction with: confidence score, suggested category, recommended action
+   → Three possible actions per transaction:
+     a. action: "record" (confidence ≥80%) → Record directly with qbExpense / qbDeposit / qbTransfer
+     b. action: "flag_for_review" (confidence 60-79%) → Call qbFlagForReview with suggestedCategory
+     c. action: "human_categorize" (confidence <60%) → Call qbFlagForReview without category OR contactHuman
+   → After triaging, notify the CPA:
+     notifyUser(type: "success", title: "Bank feed processed", body: "N transactions ready, M flagged for review", actionUrl: "/bank-feed")
+   → Log the run: agentLog(action: "bank_feed_triage", outcome: "X records, Y flagged, Z human")
 ```
 
 ### Phase 2: ANALYZE (Understand Context)
@@ -71,7 +82,32 @@ For each work item:
 
 ### Phase 3: ACT (Execute Autonomously)
 
-**Transaction Recording (most common):**
+**Bank Feed Recording (from qbCategorizeBankFeed results):**
+
+```
+For each transaction returned by qbCategorizeBankFeed:
+
+action: "record" (confidence ≥80%):
+  1. Run duplicate check: qbFetchTransactions(description, amount, date ±3 days)
+  2. If no duplicate found:
+     → type=expense: qbExpense(vendor, amount, category, date)
+     → type=income: qbDeposit(amount, date, description)
+     → type=transfer: qbTransfer(fromAccount, toAccount, amount, date)
+  3. Update agentMemory with vendor pattern (confidence +5 for confirmed)
+  4. agentLog(action: "recorded_bank_tx", outcome: "success")
+
+action: "flag_for_review" (confidence 60-79%):
+  1. qbFlagForReview(description, amount, type, suggestedCategory, confidenceScore, tellerTransactionId)
+  2. agentLog(action: "flagged_bank_tx", outcome: "flagged", reason: "confidence below 80%")
+
+action: "human_categorize" (confidence <60%):
+  1. If new vendor type: qbFlagForReview without suggestedCategory, reason: "New vendor pattern"
+  2. If genuinely ambiguous: contactHuman(action: "send", messageType: "clarification",
+       message: "New bank transaction from [vendor]: $[amount] on [date]. What category?",
+       options: ["Expense - Office Supplies", "Expense - Professional Services", "Other"])
+```
+
+**Transaction Recording (from AI tasks or documents):**
 
 ```
 1. Parse the transaction from task description or document
@@ -234,16 +270,28 @@ After each successful action:
 ### Phase 7: REPORT (Summarize Cycle)
 
 ```
-At the end of each loop cycle, produce a brief summary:
-  - Tasks processed: X
-  - Transactions recorded: Y
-  - Escalated to human: Z
-  - Errors encountered: N
-  - New patterns learned: M
+At the end of each loop cycle:
 
-If significant financial changes:
-  → Run /health-check for affected clients
-  → Flag any warning signs
+1. Produce a brief summary (logged to agentLog):
+   - Tasks processed: X
+   - Bank transactions categorized: Y (N recorded, M flagged)
+   - Documents processed: Z
+   - Escalated to human: W
+   - Errors encountered: N
+   - New patterns learned: M
+
+2. Push a portal notification so the CPA sees the cycle result immediately:
+   notifyUser(
+     type: "success",  // or "warn" if there were errors
+     title: "Accounting cycle complete",
+     body: "Processed X transactions, recorded Y, flagged Z for review. M new patterns learned.",
+     actionLabel: "Review Queue",
+     actionUrl: "/review"
+   )
+
+3. If significant financial changes or anomalies found:
+   → Run /health-check for affected clients
+   → notifyUser(type: "warn", title: "Financial anomaly detected", body: "...", actionUrl: "/reports")
 ```
 
 ## Self-Improvement Mechanisms
