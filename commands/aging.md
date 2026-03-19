@@ -4,9 +4,9 @@ allowed-tools: ["mcp__plugin_deepledger_deepledger__*"]
 argument-hint: [receivables|payables|both]
 ---
 
-Generate aging report. Default to both AR and AP if $ARGUMENTS is empty.
+Generate aging report autonomously. Default to both AR and AP.
 
-Steps:
+Steps (execute ALL autonomously):
 1. Determine type from $ARGUMENTS:
    - "receivables", "ar", "who owes" → AgedReceivables only
    - "payables", "ap", "what we owe" → AgedPayables only
@@ -19,10 +19,18 @@ Steps:
    - 61-90 days past due
    - 90+ days past due
 4. List top overdue items with customer/vendor name and amount
-5. Calculate:
+5. Calculate automatically:
    - Total outstanding
    - Average days outstanding
    - Percentage in each bucket
-6. Flag items >60 days as needing follow-up
-7. For large overdue amounts, note the specific invoices/bills
-8. Present: aging summary table, overdue highlights, action items
+   - Concentration (any single entity >30% of total)
+6. For items >60 days, pull specific invoice/bill details via
+   qbFetchTransactions to show invoice numbers, dates, and amounts
+7. Check warning signs automatically:
+   - AR >60 days exceeds 20% of total → flag for collections
+   - AP >60 days exceeds 30% of total → flag for vendor relations risk
+   - Any single entity >50% of outstanding → concentration risk
+   - Growing total outstanding vs prior month → cash flow concern
+8. Present: headline (total outstanding + key concern), aging summary
+   table, overdue highlights with specific items, action items
+   prioritized by amount and age

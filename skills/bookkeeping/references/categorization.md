@@ -1,30 +1,113 @@
-# Account Categorization — Rules and Patterns
+# Account Categorization — Autonomous Rules and Patterns
+
+## Core Principle: Categorize Autonomously
+
+The goal is zero-question categorization for the vast majority of
+transactions. Only ask the user when the correct account is genuinely
+ambiguous AND getting it wrong would misstate financials.
+
+## Autonomous Categorization Decision Tree
+
+### Step 1: Check Vendor/Customer History (ALWAYS do this first)
+
+Fetch the entity's recent transactions via qbFetchTransactions. Look at
+which accounts were used in the last 3-5 transactions.
+
+- **Consistent history (3+ transactions, same account):**
+  Use that account. Do NOT ask. Do NOT even mention it — just include it
+  in the proposal as the selected account.
+
+- **Mixed history (different accounts used):**
+  Use the most frequently used account. Note in proposal:
+  "(based on most common categorization for [vendor])"
+
+- **No history (new vendor/customer):**
+  Proceed to Step 2.
+
+### Step 2: Infer from Description + Vendor Name Together
+
+For new vendors with no history, use BOTH the transaction description
+AND the vendor name to determine the account. The description the user
+provides is the strongest signal — it tells you what was actually purchased.
+
+**Description keywords take priority over vendor name:**
+
+| Description Contains | Category |
+|---------------------|----------|
+| "supplies", "office supplies", "toner", "paper" | Office Supplies |
+| "software", "subscription", "license", "SaaS" | Software/SaaS |
+| "hosting", "server", "cloud", "infrastructure" | Software/SaaS |
+| "travel", "flight", "hotel", "airfare", "lodging" | Travel |
+| "ride", "taxi", "transportation" | Travel |
+| "meal", "lunch", "dinner", "food", "catering" | Meals & Entertainment |
+| "insurance", "premium", "coverage", "policy" | Insurance |
+| "legal", "attorney", "consulting", "advisory" | Professional Services |
+| "accounting", "audit", "tax preparation" | Professional Services |
+| "advertising", "marketing", "ad spend", "campaign" | Advertising/Marketing |
+| "rent", "lease", "office space" | Rent/Lease |
+| "electric", "gas", "water", "internet", "phone" | Utilities |
+| "payroll", "wages", "salary" | Payroll |
+| "repair", "maintenance", "fix" | Repairs & Maintenance |
+| "training", "course", "conference", "seminar" | Training & Education |
+
+**Then use vendor name — but only for single-purpose vendors:**
+
+Vendors fall into two categories:
+
+**Single-purpose vendors (safe to infer from name alone):**
+These vendors sell ONE thing. The name IS the category.
+
+| Vendor | Category | Why Safe |
+|--------|----------|----------|
+| Uber, Lyft | Travel | Only sell rides |
+| United Airlines, Delta, Southwest | Travel | Only sell flights |
+| Marriott, Hilton, Airbnb | Travel | Only sell lodging |
+| DoorDash, Grubhub, UberEats | Meals & Entertainment | Only deliver food |
+| Google Ads, Facebook Ads | Advertising/Marketing | Ad-specific products |
+| Slack, Zoom, GitHub, Notion, Figma | Software/SaaS | Single software product |
+| Adobe, Salesforce, HubSpot | Software/SaaS | Software companies |
+| ADP, Gusto, Paychex | Payroll | Payroll processors |
+| State Farm, Geico, Allstate | Insurance | Insurance carriers |
+| AT&T, Verizon, Comcast, T-Mobile | Utilities | Telecom/internet only |
+| Office Depot, Office Max, Staples | Office Supplies | Office supply stores |
+
+**Multi-purpose vendors (NEVER infer from name alone — need description):**
+These vendors sell many categories of things. The vendor name tells you
+nothing about what was purchased.
+
+| Vendor | Could Be | What To Do |
+|--------|----------|------------|
+| Amazon | Office Supplies, Software, Inventory, Equipment, Books | MUST use description or ask |
+| Costco | Office Supplies, Meals, Inventory, Equipment | MUST use description or ask |
+| Walmart | Office Supplies, Meals, Inventory, Equipment | MUST use description or ask |
+| Target | Office Supplies, Meals, Equipment | MUST use description or ask |
+| Best Buy | Software, Equipment, Office Supplies | MUST use description or ask |
+| Google | Advertising, Software/SaaS, Cloud hosting | MUST use description or ask |
+| Apple | Software, Equipment, Subscription | MUST use description or ask |
+| Microsoft | Software, Cloud hosting, Equipment | MUST use description or ask |
+
+For multi-purpose vendors: if the user's description makes the category
+clear (e.g., "Amazon for office supplies"), use that. If the description
+is vague (e.g., just "Amazon $150"), ask.
+
+### Step 3: Ask Only If Genuinely Ambiguous
+
+If NONE of the above yields a clear answer, ask. Show the user the
+available accounts from qbMasterData with AcctNum and let them choose.
+
+Frame it concisely: "I can't determine the right category for this $X
+payment to [vendor]. Which account should I use?" then list the top 5
+most likely options based on what you do know.
 
 ## Categorization Consistency
 
 The most important rule: categorize consistently. If "Staples" purchases
 have been going to "Office Supplies" (AcctNum 6000), new Staples purchases
-should also go to "Office Supplies" unless the user explicitly says otherwise.
+MUST go to "Office Supplies" unless the user explicitly says otherwise.
 
-## How to Maintain Consistency
-
-### Step 1: Check Recent History
-
-Before proposing an account for a transaction, fetch the vendor/customer's
-recent transactions via qbFetchTransactions. Look at which accounts were
-used in the last 3-5 transactions.
-
-### Step 2: Follow the Pattern
-
-If the last 3 transactions for "Staples" all used "Office Supplies":
-- Default to "Office Supplies" in the proposal
-- Show the user: "Based on previous transactions, categorizing to
-  Office Supplies (6000). Change?"
-
-### Step 3: Ask When Uncertain
-
-If there's no history, or if history is inconsistent, ask the user.
-Never guess. Show them the available account options from qbMasterData.
+**History always wins.** Even if "Amazon" is a multi-purpose vendor, if
+the company's last 5 Amazon transactions all went to "Office Supplies",
+the next one should default there too (with a note in the proposal).
 
 ## Common Account Mappings
 
@@ -32,18 +115,18 @@ These are typical mappings for small businesses. Always verify against
 the specific company's chart of accounts via qbMasterData.
 
 ### Expense Accounts (typical)
-| Category | Common Vendors | Typical AcctNum Range |
-|----------|----------------|----------------------|
-| Office Supplies | Staples, Office Depot, Amazon | 6000-6099 |
-| Rent/Lease | Landlord, Property Management | 6100-6199 |
-| Utilities | Electric co, Gas co, Water, Internet | 6200-6299 |
-| Insurance | Insurance carriers | 6300-6399 |
-| Professional Services | Lawyers, CPAs, Consultants | 6400-6499 |
-| Software/SaaS | Tech vendors | 6500-6599 |
-| Travel | Airlines, Hotels, Uber | 6600-6699 |
-| Meals & Entertainment | Restaurants | 6700-6799 |
-| Advertising/Marketing | Google, Facebook, agencies | 6800-6899 |
-| Payroll | Payroll providers | 6900-6999 |
+| Category | Typical AcctNum Range |
+|----------|----------------------|
+| Office Supplies | 6000-6099 |
+| Rent/Lease | 6100-6199 |
+| Utilities | 6200-6299 |
+| Insurance | 6300-6399 |
+| Professional Services | 6400-6499 |
+| Software/SaaS | 6500-6599 |
+| Travel | 6600-6699 |
+| Meals & Entertainment | 6700-6799 |
+| Advertising/Marketing | 6800-6899 |
+| Payroll | 6900-6999 |
 
 ### Income Accounts (typical)
 | Category | Typical AcctNum Range |

@@ -3,7 +3,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "mcp__plugin_deepledger_deepledger__qbBill|mcp__plugin_deepledger_deepledger__qbExpense|mcp__plugin_deepledger_deepledger__qbInvoice|mcp__plugin_deepledger_deepledger__qbSalesReceipt|mcp__plugin_deepledger_deepledger__qbJournalEntry|mcp__plugin_deepledger_deepledger__qbDeposit|mcp__plugin_deepledger_deepledger__qbRefundReceipt",
+        "matcher": "mcp__plugin_deepledger_deepledger__qbBill|mcp__plugin_deepledger_deepledger__qbExpense|mcp__plugin_deepledger_deepledger__qbInvoice|mcp__plugin_deepledger_deepledger__qbSalesReceipt|mcp__plugin_deepledger_deepledger__qbJournalEntry|mcp__plugin_deepledger_deepledger__qbDeposit|mcp__plugin_deepledger_deepledger__qbRefundReceipt|mcp__plugin_deepledger_deepledger__qbBillPayment|mcp__plugin_deepledger_deepledger__qbReceivePayment|mcp__plugin_deepledger_deepledger__qbCredit",
         "hooks": [
           {
             "type": "prompt",
