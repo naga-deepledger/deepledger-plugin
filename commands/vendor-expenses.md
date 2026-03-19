@@ -1,33 +1,92 @@
 ---
-description: Vendor spend analysis — who you're paying and how much
+description: Vendor spend analysis — who you're paying, trends, and anomalies
 allowed-tools: ["mcp__plugin_deepledger_deepledger__*"]
 argument-hint: [period or vendor name]
 ---
 
-Analyze vendor spending autonomously. Pull all data and present complete
-analysis without intermediate questions.
+Analyze vendor spending autonomously. Pull all data upfront and present a
+complete analysis with trend detection in one response — no intermediate
+questions.
 
 If $ARGUMENTS contains a vendor name, focus on that vendor. If it contains
-a period, use it as the reporting period. Default to current month.
+a period, use it as the reporting period. Default to current month vs prior
+month for trend analysis.
 
-Steps (execute ALL autonomously):
-1. Use qbReports with "VendorExpenses" for the requested period
-2. Use qbReports again for the comparison period (prior month or prior year)
-3. Rank vendors by total spend (highest first)
-4. Calculate for each significant vendor:
-   - Total spend this period
-   - Change from prior period ($ and %)
-   - Percentage of total expenses
-5. Automatically highlight:
-   - Top 5 vendors by spend
-   - Vendors with >25% increase from prior period
-   - New vendors not present in prior period
-   - Vendors with significant decrease (possible missed payments?)
-   - Any single vendor >20% of total expenses (concentration risk)
-6. If a specific vendor is requested:
-   - Pull detailed transactions via qbFetchTransactions for that vendor
-   - Show individual transactions with dates, amounts, and accounts
-   - Identify spending patterns (recurring vs one-time)
-   - Show account categorization breakdown
-7. Present: headline finding, ranked vendor table, variance highlights,
-   concentration analysis, recommendations
+## Steps (execute ALL autonomously)
+
+**Phase 1: Pull Data**
+1. Run qbReports "VendorExpenses" for the requested period (current month)
+2. Run qbReports "VendorExpenses" for prior month (comparison period)
+3. Run qbReports "VendorExpenses" summarized by Month for the past 3 months
+   — this is the trend data (use summarize_column_by="Month")
+4. Load agentMemory (category="vendor") to check for known vendor baselines
+   and previously flagged patterns
+
+**Phase 2: Compute Metrics**
+
+For each vendor in the current period:
+- **Total spend this period** and **% of total expenses**
+- **Change vs prior month** ($ amount and % change)
+- **3-month trend**: Increasing / Decreasing / Stable / New (based on Phase 1
+  monthly data)
+- **Trend severity**: if spend increased >25% month-over-month for 2+ months,
+  flag as "Accelerating"
+- **Category**: pull from agentMemory or infer from name
+
+**Phase 3: Anomaly Detection (automatic)**
+
+Flag any of the following without asking:
+- **Concentration risk**: single vendor >20% of total expenses
+- **Accelerating spend**: >25% MoM increase for 2+ consecutive months
+- **Spike**: >2x the vendor's typical spend this month (compare vs 3-month avg)
+- **New vendor**: no history in prior periods, spend >$500
+- **Possible missed payment**: vendor present last month but zero spend this
+  month and is a known recurring vendor (check agentMemory)
+- **Category mismatch**: same vendor switching accounts between periods
+
+**Phase 4: Vendor Deep-Dive (if specific vendor requested)**
+
+If a vendor name is provided:
+- qbFetchTransactions for that vendor (last 90 days, all transaction types)
+- Identify recurring vs one-time transactions
+- Show month-over-month spend for each of the last 3 months
+- Account categorization breakdown
+- Flag any duplicate charges (same amount within 7 days)
+- Check agentMemory for vendor-specific notes
+
+**Phase 5: Update Memory**
+
+For vendors with clear spending patterns (consistent category, stable or
+predictable amounts), update agentMemory with:
+- Category rule (vendor → account)
+- Typical spend range (min/max from the 3 months of data)
+- Frequency (monthly recurring vs irregular)
+
+Only write memory if confidence ≥ 85% based on consistency of data.
+
+## Output Format
+
+```
+VENDOR SPEND ANALYSIS — [Period]
+Total Expenses: $X,XXX  |  Vendors: N  |  vs Prior: +/-$X (+/-X%)
+
+TOP VENDORS BY SPEND
+Rank | Vendor              | This Period | Prior Period | Change   | Trend
+-----|---------------------|-------------|--------------|----------|--------
+  1  | [Vendor Name]       | $X,XXX      | $X,XXX       | +$XXX    | Stable
+  2  | [Vendor Name]       | $X,XXX      | —            | New      | New
+  ...
+
+FLAGS REQUIRING ATTENTION
+⚠️  [Vendor]: Spend increased 45% for 2 consecutive months (Accelerating)
+🔴  [Vendor]: 31% of total expenses (Concentration Risk)
+🆕  [Vendor]: New vendor, $1,200 spend — no prior history
+✅  No anomalies detected for [X] vendors
+
+RECOMMENDATIONS
+1. [Most urgent item with specific action]
+2. [Second item]
+...
+```
+
+For vendor deep-dive, add transaction-level table with dates, amounts, accounts.
