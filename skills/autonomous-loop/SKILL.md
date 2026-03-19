@@ -21,10 +21,12 @@ You are an autonomous AI accounting employee running on a scheduled cycle. Your 
 ```
 1. Poll for QuickBooks changes since last cycle:
    → Use qbChangeDataCapture(entities: ["Bill","BillPayment","Purchase","Invoice","Payment","SalesReceipt","Deposit","JournalEntry","Transfer","RefundReceipt","VendorCredit"], changedSince: <last_cycle_timestamp>)
-   → Read last_cycle_timestamp from agentMemory(key: "loop:last_cdc_timestamp")
+   → Read last_cycle_timestamp from agentMemory(operation: "read", category: "loop", subject: "last_cdc_timestamp")
    → If no timestamp in memory, default to 24 hours ago
    → This returns counts+IDs of what changed — efficient, no full scan needed
-   → After successful CDC poll, save current timestamp: agentMemory(action: "write", key: "loop:last_cdc_timestamp", value: <now_ISO>)
+   → After successful CDC poll, save current timestamp:
+     agentMemory(operation: "write", category: "loop", subject: "last_cdc_timestamp", memory: "<now_ISO>", confidence: 100)
+     (if memory already exists, use operation: "update" with the memoryId)
    → If CDC returns hasMore=true, narrow changedSince window and re-poll
 
 2. Fetch all pending AI tasks:
@@ -210,16 +212,18 @@ This creates the audit trail visible in the portal's Audit Log page.
 ```
 After each successful action:
   1. Update agent memory with new patterns:
-     agentMemory(action: "write", clientId: <org_id>, key: "vendor:<vendor_name>", value: {
-       category: "<account used>",
-       typical_amount_range: [min, max],
-       frequency: "monthly" | "weekly" | "one-time",
-       last_seen: "2026-03-19"
-     })
+     agentMemory(
+       operation: "write",
+       category: "vendor",
+       subject: "<vendor_name>",
+       memory: "<JSON: {\"category\":\"<account>\",\"typical_amount_range\":[min,max],\"frequency\":\"monthly|weekly|one-time\",\"last_seen\":\"<date>\"}>",
+       confidence: 70
+     )
+     (If vendor already in memory, use operation: "update" with memoryId instead)
 
   2. If a human corrected a previous categorization:
      → Update the memory to reflect the correction
-     → agentMemory(action: "update", key: "vendor:<vendor_name>", value: { category: "<corrected_category>" })
+     → agentMemory(operation: "update", memoryId: "<id>", memory: "<corrected JSON>", confidence: 90)
      → Log the learning: agentLog(action: "learned_correction", details: { from, to, reason })
 
   3. Track success rate mentally:

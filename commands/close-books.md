@@ -68,13 +68,16 @@ After presenting results, store the close timestamp in agent memory so the next
 close can use CDC to detect only what changed:
 
 ```
-agentMemory(action: "write", key: "close:last_run", value: {
-  timestamp: "<ISO datetime of this close>",
-  period: "<closing month, e.g. 2026-02>",
-  score: "<X/16 checks passed>",
-  action_items: <count of open action items>
-})
+agentMemory(
+  operation: "write",
+  category: "close",
+  subject: "close:last_run",
+  memory: "<JSON string: {\"timestamp\":\"<ISO datetime>\",\"period\":\"<e.g. 2026-02>\",\"score\":\"<X/16>\",\"action_items\":<N>}>",
+  confidence: 100
+)
 ```
+
+If a memory with category="close" and subject="close:last_run" already exists, use operation: "update" with the memoryId to overwrite it.
 
 **Tone:** Professional but accessible. Frame findings as "here's what I found
 and here's how to fix it" — not just a list of problems.

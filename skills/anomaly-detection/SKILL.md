@@ -198,18 +198,21 @@ For each flagged anomaly:
 After each scan, update what you learned:
 ```
 1. For each vendor with no memory → create baseline from this scan:
-   agentMemory(action: "write", key: "vendor:<name>", value: {
-     typical_amount_range: [min, max],
-     frequency: "monthly|weekly|quarterly|one-time",
-     usual_category: "<account>",
-     last_seen: "<date>",
-     transaction_count: N
-   })
+   agentMemory(
+     operation: "write",
+     category: "vendor",
+     subject: "<vendor name>",
+     memory: "<JSON string: {\"typical_amount_range\":[min,max],\"frequency\":\"monthly|weekly|quarterly|one-time\",\"usual_category\":\"<account>\",\"last_seen\":\"<date>\",\"transaction_count\":<N>}>",
+     confidence: 60
+   )
 
 2. If a vendor was flagged but turns out normal → update memory:
-   agentMemory(action: "update", key: "vendor:<name>", value: {
-     typical_amount_range: [new_min, new_max]  // expand range if legitimate
-   })
+   agentMemory(
+     operation: "update",
+     memoryId: "<id from read>",
+     memory: "<updated JSON string with expanded typical_amount_range>",
+     confidence: 75
+   )
 ```
 
 ---
@@ -251,12 +254,15 @@ When running as part of the autonomous loop, anomaly detection should run:
 
 The autonomous loop should store the last scan timestamp in agentMemory:
 ```
-agentMemory(action: "write", key: "anomaly_scan:last_run", value: {
-  timestamp: "<ISO datetime>",
-  transactions_scanned: N,
-  anomalies_found: M
-})
+agentMemory(
+  operation: "write",
+  category: "anomaly_scan",
+  subject: "last_run",
+  memory: "<JSON string: {\"timestamp\":\"<ISO datetime>\",\"transactions_scanned\":<N>,\"anomalies_found\":<M>}>",
+  confidence: 100
+)
 ```
+(If an entry for category="anomaly_scan", subject="last_run" already exists, use operation: "update" with memoryId instead.)
 
 ---
 
