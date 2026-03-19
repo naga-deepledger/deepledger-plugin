@@ -21,6 +21,7 @@ Steps:
 4. qbReports "AgedReceivables" as of month end
 5. qbReports "AgedPayables" as of month end
 6. qbReports "TransactionList" for the closing month (to scan for anomalies)
+7. qbChangeDataCapture — check agentMemory for "close:last_run" timestamp; if found, use it as `changedSince` to pull only what changed since last close. Entity list: ["Invoice", "Payment", "Bill", "BillPayment", "Purchase", "JournalEntry", "Deposit", "Transfer"]. This efficiently surfaces new or edited transactions without rescanning everything.
 
 **Phase 2: Checklist Validation**
 
@@ -43,6 +44,7 @@ Check each item and report status (Pass / Warning / Action Needed):
 | 13 | **Accruals** | Any known expenses incurred but not yet billed (accrued liabilities)? |
 | 14 | **Payroll** | Were all payroll entries recorded and categorized correctly? |
 | 15 | **Sales Tax** | Any sales tax collected that needs to be remitted? |
+| 16 | **Changes Since Last Close** | From CDC: any transactions created or modified since last close that weren't in the prior checklist? Flag anything edited after being previously approved. |
 
 **Phase 3: Results Presentation**
 
@@ -59,6 +61,20 @@ Present as a structured report:
    accruals, reclassifications), propose them — ready for user approval
 6. **Reminder**: Items that can't be verified programmatically (bank reconciliation,
    physical inventory counts, etc.)
+
+**Phase 4: Record Close Timestamp**
+
+After presenting results, store the close timestamp in agent memory so the next
+close can use CDC to detect only what changed:
+
+```
+agentMemory(action: "write", key: "close:last_run", value: {
+  timestamp: "<ISO datetime of this close>",
+  period: "<closing month, e.g. 2026-02>",
+  score: "<X/16 checks passed>",
+  action_items: <count of open action items>
+})
+```
 
 **Tone:** Professional but accessible. Frame findings as "here's what I found
 and here's how to fix it" — not just a list of problems.
