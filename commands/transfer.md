@@ -25,22 +25,19 @@ Steps:
    - Destination account name, AcctNum, and Account ID
    - Amount and date
    - Auto-generated memo: "Transfer: [source] → [destination]"
-5. On confirmation, execute via qbJournalEntry:
-   - Debit destination account (money going IN)
-   - Credit source account (money going OUT)
-   - Include descriptive memo
+5. On confirmation, execute via qbTransfer:
+   - fromAccountId: source account ID
+   - toAccountId: destination account ID
+   - amount: transfer amount
+   - txnDate: YYYY-MM-DD
+   - memo: descriptive memo
 6. Confirm success with transaction ID
-
-**Note on QBO Transfer entity:** The QuickBooks API has a native Transfer
-entity (FromAccountRef, ToAccountRef, Amount) which is cleaner than using
-a Journal Entry. If a `qbTransfer` MCP tool becomes available, prefer it
-over the JE workaround. Until then, the JE pattern works correctly.
 
 **Critical:** Transfers are NOT expenses. Moving money between your own
 accounts doesn't change total assets (just shifts between accounts).
 Credit card payments reduce both cash and credit card liability.
 
 Common patterns:
-- "Transfer $5,000 from savings to checking" → Credit Savings, Debit Checking
-- "Pay off credit card" → Credit Checking, Debit Credit Card
-- "Move $10K to operating account" → identify source, debit operating account
+- "Transfer $5,000 from savings to checking" → fromAccountId=Savings, toAccountId=Checking
+- "Pay off credit card" → fromAccountId=Checking, toAccountId=CreditCard
+- "Move $10K to operating account" → identify source, toAccountId=operating account

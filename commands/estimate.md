@@ -19,14 +19,15 @@ Steps:
    - Date (default today) and expiration date (default 30 days)
    - Line items with descriptions, quantities, rates, amounts
    - Total
-6. On confirmation, create via qbBill or qbInvoice tools depending on
-   available MCP tools. If a dedicated estimate tool exists (qbEstimate),
-   use that.
+6. On confirmation, create via qbEstimate with:
+   - customerId, txnDate, expirationDate
+   - lines: [{amount, description, itemId/quantity/unitPrice}]
+   - Optional: billEmail, customerMemo, salesTermId
+7. Confirm success with estimate ID
 
-**Note:** The QBO API fully supports Estimates (full CRUD). If the MCP
-server exposes an estimate tool, use it directly. If not, inform the user
-that estimates can be created in the QBO UI, and offer to create a draft
-invoice marked "ESTIMATE — DO NOT PAY" in the memo instead.
+**Status tracking:** Estimates support status: Pending, Accepted, Closed,
+Rejected. Update via qbEstimate with estimateId and txnStatus.
 
 **Conversion:** When an estimate is accepted, offer to convert it to an
 invoice: "This estimate was accepted — shall I create an invoice from it?"
+Create the invoice with matching line items via qbInvoice.

@@ -28,8 +28,8 @@ Last updated: March 2026. Sources: Intuit Developer docs, API release notes.
 | PurchaseOrder | Full | CRUD | Plus/Advanced plans only, convertible to Bill |
 | TimeActivity | Full | CRUD | Time tracking; Premium Time API for Gold/Platinum partners |
 | InventoryAdjustment | Partial | CR_U | Create and update only. **Delete NOT supported** |
-| RecurringTransaction | **Read-only** | R_ | Query and read only. **Cannot create, update, or delete via API** |
-| Budget | **Read-only** | R_ | Query and read only. **Cannot create, update, or delete via API** |
+| RecurringTransaction | Partial | CRD | List, read, create, delete via API. **Update not supported** — edit via browser |
+| Budget | Partial | CRD | List, read, create, delete via API. **Update not supported** — edit via browser |
 
 ## Master Data — API Support
 
@@ -82,8 +82,8 @@ Last updated: March 2026. Sources: Intuit Developer docs, API release notes.
 | **Bank Reconciliation** | No API. Can query reconciliation *status* (Reconciled/Cleared/Uncleared) per transaction, but cannot perform reconciliation | Browser automation via `/reconcile` |
 | **Bank Feeds** | No API. Cannot access "For Review" bank feed items. Intuit won't expose bank statement data for security/economic reasons | Browser automation for matching |
 | **Bank Rules** | No API. Auto-categorization rules are UI-only | Browser automation via `/bank-rules` |
-| **Recurring Txn Create/Edit** | Read-only API (can query/read but NOT create/update/delete) | Browser automation via `/recurring` to create/edit. Use API to LIST existing recurring transactions |
-| **Budget Create/Edit** | Read-only API (can query/read but NOT create/update/delete) | Use API to READ existing budgets for `/budget` comparisons. Browser to create/edit |
+| **Recurring Txn Edit** | API supports list/read/create/delete. **Update not supported** | Use qbRecurringTransaction for list/read/create/delete. Browser for edit only |
+| **Budget Edit** | API supports list/read/create/delete. **Update not supported** | Use qbBudget for list/read/create/delete. Browser for edit only |
 | **Audit Log** | No API | Browser navigation to Settings → Audit Log |
 | **1099 Filing** | Vendor1099 boolean settable via API, but form generation/filing is UI-only | Set 1099 flag via API; filing via browser |
 | **Payroll** | Separate GraphQL API, partner-tier gated | Not covered; requires separate integration |
@@ -135,25 +135,19 @@ Current MCP tools available via DeepLedger:
 | qbFetchTransactions | Query | Yes |
 | qbReports | Reports | Yes |
 | qbGetUploadUrl | Attachable | Yes |
+| qbTransfer | Transfer | Yes |
+| qbEstimate | Estimate | Yes |
+| qbPurchaseOrder | PurchaseOrder | Yes |
+| qbRecurringTransaction | RecurringTransaction | Yes (list/read/create/delete) |
+| qbBudget | Budget | Yes (list/read/create/delete) |
 
 ### MCP Tools NOT Yet Available (API supports them)
 
-These QBO API entities have full API support but no dedicated MCP tool yet.
-
-| QBO Entity | Full API Support | Workaround |
-|-----------|-----------------|------------|
-| Transfer | CRUD | Use JournalEntry (debit/credit pattern) |
-| Estimate | CRUD | Use draft Invoice with "ESTIMATE" memo |
-| PurchaseOrder | CRUD | Record Bill when goods arrive |
-| TimeActivity | CRUD | Not yet covered |
+| QBO Entity | API Support | Workaround |
+|-----------|------------|------------|
+| TimeActivity | Full CRUD | Not yet covered |
 | InventoryAdjustment | Create/Update | Not yet covered |
-| RecurringTransaction | **Read-only** | Read via API; create/edit via browser |
-| Budget | **Read-only** | Read via API for comparisons; create via browser |
 
 **Action items for DeepLedger MCP team:**
-1. Add `qbTransfer` tool — native Transfer entity is cleaner than JE workaround
-2. Add `qbEstimate` tool — full CRUD supported, common workflow
-3. Add `qbPurchaseOrder` tool — full CRUD, Plus/Advanced plans
-4. Add `qbTimeActivity` tool — enables time-based billing workflow
-5. Add `qbRecurringTransaction` read tool — list scheduled transactions
-6. Add `qbBudget` read tool — read budgets for comparison reports
+1. Add `qbTimeActivity` tool — enables time-based billing workflow
+2. Add `qbInventoryAdjustment` tool — create/update inventory adjustments

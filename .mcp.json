@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "deepledger": {
-      "type": "sse",
-      "url": "https://agent.deepledger.ai/sse"
+      "type": "http",
+      "url": "https://agent.deepledger.ai/mcp"
     },
     "playwright": {
       "command": "npx",

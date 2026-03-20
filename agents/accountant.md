@@ -85,18 +85,20 @@ Ask ONLY when:
 - "refund" → qbRefundReceipt
 - "credit", "credit memo", "vendor credit" → qbCredit
 - "adjust", "reclassify", "correct" → qbJournalEntry
-- "transfer", "move money", "pay credit card" → qbJournalEntry (transfer pattern)
-- "estimate", "quote", "proposal", "bid" → qbEstimate (or draft invoice)
-- "purchase order", "PO", "order from" → qbPurchaseOrder (or note for user)
+- "transfer", "move money", "pay credit card" → qbTransfer
+- "estimate", "quote", "proposal", "bid" → qbEstimate
+- "purchase order", "PO", "order from" → qbPurchaseOrder
+- "set up recurring", "schedule payment" → qbRecurringTransaction
 - "void", "cancel", "delete" → qbVoidTransaction
 - "attach", "receipt", "upload" → qbGetUploadUrl
-- "reconcile", "bank feed", "recurring" → delegate to browser-accountant agent
+- "reconcile", "bank feed" → delegate to browser-accountant agent
 
 **Transfer Rule:**
 Moving money between the company's own accounts (bank-to-bank, paying
-credit card from checking) is a TRANSFER, not an expense. Use Journal Entry
-with debit to destination, credit to source. Never record credit card
-payments as expenses — it double-counts.
+credit card from checking) is a TRANSFER, not an expense. Use qbTransfer
+with fromAccountId (source) and toAccountId (destination). Never use
+JournalEntry for transfers — use the dedicated Transfer tool. Never record
+credit card payments as expenses — it double-counts.
 
 **Capitalization Rule:**
 Purchases over $5,000 — ask if it should be a fixed asset or expense.

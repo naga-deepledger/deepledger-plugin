@@ -3,7 +3,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "mcp__plugin_deepledger_deepledger__qbBill|mcp__plugin_deepledger_deepledger__qbExpense|mcp__plugin_deepledger_deepledger__qbInvoice|mcp__plugin_deepledger_deepledger__qbSalesReceipt|mcp__plugin_deepledger_deepledger__qbJournalEntry|mcp__plugin_deepledger_deepledger__qbDeposit|mcp__plugin_deepledger_deepledger__qbRefundReceipt|mcp__plugin_deepledger_deepledger__qbBillPayment|mcp__plugin_deepledger_deepledger__qbReceivePayment|mcp__plugin_deepledger_deepledger__qbCredit",
+        "matcher": "mcp__plugin_deepledger_deepledger__qbBill|mcp__plugin_deepledger_deepledger__qbExpense|mcp__plugin_deepledger_deepledger__qbInvoice|mcp__plugin_deepledger_deepledger__qbSalesReceipt|mcp__plugin_deepledger_deepledger__qbJournalEntry|mcp__plugin_deepledger_deepledger__qbDeposit|mcp__plugin_deepledger_deepledger__qbRefundReceipt|mcp__plugin_deepledger_deepledger__qbBillPayment|mcp__plugin_deepledger_deepledger__qbReceivePayment|mcp__plugin_deepledger_deepledger__qbCredit|mcp__plugin_deepledger_deepledger__qbTransfer|mcp__plugin_deepledger_deepledger__qbEstimate|mcp__plugin_deepledger_deepledger__qbPurchaseOrder|mcp__plugin_deepledger_deepledger__qbRecurringTransaction|mcp__plugin_deepledger_deepledger__qbBudget",
         "hooks": [
           {
             "type": "prompt",

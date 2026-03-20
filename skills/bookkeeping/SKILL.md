@@ -93,9 +93,11 @@ Display a clean proposal with:
 | Bank deposit | qbDeposit |
 | Customer refund | qbRefundReceipt |
 | Adjusting entry | qbJournalEntry |
-| Bank transfer / credit card payment | qbJournalEntry (transfer pattern) |
-| Estimate / quote | qbEstimate (if available, else draft invoice) |
-| Purchase order | qbPurchaseOrder (if available, else note for user) |
+| Bank transfer / credit card payment | qbTransfer |
+| Estimate / quote | qbEstimate |
+| Purchase order | qbPurchaseOrder |
+| Recurring transaction (list/create/delete) | qbRecurringTransaction |
+| Budget (list/create/read/delete) | qbBudget |
 | Vendor credit / customer credit memo | qbCredit |
 | Void/delete transaction | qbVoidTransaction |
 | Attach receipt/document | qbGetUploadUrl |
@@ -108,10 +110,10 @@ done through the QBO API:
 | Feature | Command | API Status |
 |---------|---------|-----------|
 | Bank reconciliation | `/reconcile` | No API. Can query reconciliation status per transaction but cannot perform reconciliation |
-| Recurring txn create/edit | `/recurring` | **Read-only API** — can list existing, but create/edit/delete is browser-only |
+| Recurring txn edit | `/recurring` | **API supports list/read/create/delete** via qbRecurringTransaction. Only update/edit requires browser |
 | Bank rules | `/bank-rules` | No API |
 | Bank feed matching | (via `/reconcile`) | No API. Bank feed items ("For Review") not accessible |
-| Budget create/edit | (via QBO UI) | **Read-only API** — can read existing budgets, but create/edit is browser-only |
+| Budget edit | (via QBO UI) | **API supports list/read/create/delete** via qbBudget. Only update/edit requires browser |
 | Audit log | (via QBO UI) | No API |
 | 1099 filing | (via QBO UI) | Vendor1099 flag settable via API; form generation/filing is UI-only |
 
