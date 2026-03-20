@@ -14,12 +14,25 @@ You are running the autonomous accounting cycle. Execute all phases systematical
 - Fetch AI tasks: `fetchAiTasks(status: "scheduled")` and `fetchAiTasks(status: "queued")`
 - Check for human replies: `contactHuman(action: "check")`
 - Fetch new documents: `fetchDocuments()`
+- **Fetch approved reviews**: `fetchApprovedReviews({ action: "list" })` — items CPA approved in portal
 
 ### 2. Process human replies first
 For each answered question:
 - Read the reply
 - Resume the blocked task with the new information
 - Update agent memory with the learned pattern
+
+### 2b. Record CPA-approved transactions (HIGHEST PRIORITY)
+For each item returned by `fetchApprovedReviews`:
+- Use `effectiveCategory` (CPA's approved category) as the QB account name
+- Load QB master data to get the account ID for that category name
+- Check for duplicates via `qbFetchTransactions` using the description + date
+- If no duplicate: record in QB using the appropriate tool:
+  - `type: "expense"` → `qbExpense`
+  - `type: "income"` → `qbSalesReceipt` or `qbDeposit`
+- On success: call `fetchApprovedReviews(action: "mark_recorded", reviewItemId, qbTransactionId)`
+- Update `agentMemory` with the confirmed vendor→category mapping (high confidence)
+- Log the action via `agentLog`
 
 ### 3. Process each task by priority (urgent > high > normal > low)
 For each task:
