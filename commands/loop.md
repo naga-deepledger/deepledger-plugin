@@ -10,6 +10,37 @@ You are running the autonomous accounting cycle. Execute all phases systematical
 
 ## Execution Steps
 
+### 0. Load global accounting rules (FIRST — do before anything else)
+Read client-specific memory for the active organization:
+```
+agentMemory(operation: "read", category: "categorization")
+agentMemory(operation: "read", category: "vendor")
+agentMemory(operation: "read", category: "process")
+```
+
+**Global firm-wide categorization rules (always apply regardless of client):**
+
+Account Mapping Rules:
+- AWS / GCP / Azure / Vercel / Render / Heroku → **Cloud Hosting/Software expense** (NOT Utilities)
+- FedEx / UPS / USPS → **Shipping & Delivery**
+- DoorDash / Uber Eats → **Meals**
+- Uber / Lyft → **Travel**
+- Office Depot / Staples / Amazon (office supplies) → **Office Supplies expense**
+- Zoom / Slack / Google Workspace / Microsoft 365 → **Software/SaaS expense**
+- WeWork / Regus / office lease → **Rent expense**
+
+Tool Usage Rules:
+- "bill from vendor" → `qbBill` (AP). "invoice to customer" → `qbInvoice` (AR)
+- "got paid / received payment" → `qbReceivePayment` (fetch open invoices first)
+- "paid / bought / spent" → `qbExpense` (direct) or check for open bill → `qbBillPayment`
+- "report / how much / spending" → `qbReports` (P&L for spending, Balance Sheet for position)
+- Ambiguous "bill" with unknown entity → ask via `contactHuman` to clarify customer vs vendor
+
+Workflow Safety Rules:
+- **ALWAYS** run `qbFetchTransactions` before creating any transaction (duplicate check)
+- **ALWAYS** verify vendor/customer exists via `qbMasterData` before referencing in transaction
+- Confidence ≥ 80%: act autonomously. 60-79%: act + flag. < 60%: `contactHuman` first
+
 ### 1. Gather pending work
 - Fetch AI tasks: `fetchAiTasks(status: "scheduled")` and `fetchAiTasks(status: "queued")`
 - Check for human replies: `contactHuman(action: "check")`
@@ -30,9 +61,12 @@ For each item returned by `fetchApprovedReviews`:
 - If no duplicate: record in QB using the appropriate tool:
   - `type: "expense"` → `qbExpense`
   - `type: "income"` → `qbSalesReceipt` or `qbDeposit`
-- On success: call `fetchApprovedReviews(action: "mark_recorded", reviewItemId, qbTransactionId)`
+- On success:
+  1. Call `fetchApprovedReviews(action: "mark_recorded", reviewItemId, qbTransactionId)`
+  2. Call `notifyUser(type: "success", title: "Recorded in QuickBooks", body: "<description> ($<amount>) → <effectiveCategory>", actionLabel: "View Review Queue", actionUrl: "/review")`
 - Update `agentMemory` with the confirmed vendor→category mapping (high confidence)
 - Log the action via `agentLog`
+- If recording fails (duplicate found or QB error): call `notifyUser(type: "warn", title: "Recording skipped", body: "<description> — <reason>", actionUrl: "/review")`
 
 ### 3. Process each task by priority (urgent > high > normal > low)
 For each task:
