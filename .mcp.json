@@ -2,7 +2,7 @@
   "mcpServers": {
     "deepledger": {
       "type": "http",
-      "url": "https://mcp.deepledger.ai/mcp"
+      "url": "https://mcp.deepledger.ai/"
     },
     "playwright": {
       "command": "npx",
