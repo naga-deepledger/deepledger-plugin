@@ -27,15 +27,25 @@ This skill activates when:
 
 ## Anomaly Detection Framework
 
-### Step 1: Load Historical Patterns
+### Step 1: Load Vendor Baselines
+
+**Reference:** See `references/vendor-baseline-model.md` for the full baseline data schema, threshold rules, and confidence evolution model.
+
+**Tip:** If no baselines exist yet, recommend running `/build-baselines` first for best results. The scan will still work without baselines but can only catch obvious issues (duplicates, round numbers, etc.).
 
 ```
-1. Load agent memory for this client:
-   → agentMemory(action: "read", organizationId: <org_id>)
-   → Extract: vendor→category mappings, typical amount ranges, frequency patterns
-   → Build a mental model: "Vendor X usually charges $800-1200/month"
+1. Load vendor baselines from agent memory:
+   → agentMemory(action: "read", organizationId: <org_id>, category: "vendor_baseline")
+   → Parse each baseline JSON: extract amount stats (mean, stddev, p95, max),
+     frequency (pattern, avg_days_between), categorization (primary_account)
+   → Build a mental model per vendor: "Vendor X averages $687 ± $285, monthly, to Software Subscriptions"
 
-2. If no memory exists for a vendor, flag it as NEW VENDOR (medium risk)
+2. Also load general agent memory for this client:
+   → agentMemory(action: "read", organizationId: <org_id>)
+   → Extract: additional vendor→category mappings, typical amount ranges not in baselines
+
+3. If no baseline exists for a vendor → flag it as NEW VENDOR (medium risk)
+   → After the scan completes, create a minimal baseline for new vendors (see Step 6)
 ```
 
 ### Step 2: Fetch Recent Transactions
@@ -90,9 +100,15 @@ Run ALL of the following checks against every transaction:
 
 #### 🟡 MEDIUM RISK Anomalies (flag for review):
 
-**G. Amount Spike (>2x Normal)**
-- Vendor charges more than 2x their typical amount range stored in memory
-- Example: "Vendor X usually charges $200-400, this charge is $950"
+**G. Amount Spike (statistical)**
+- If vendor baseline exists, use statistical thresholds from `vendor-baseline-model.md`:
+  - amount > mean + 3×stddev → HIGH risk
+  - amount > mean + 2×stddev → MEDIUM risk
+  - amount > p95 × 1.5 → MEDIUM risk
+  - amount > max × 2 → HIGH risk
+  - If stddev is 0 (identical amounts), flag anything >10% different
+- If no baseline, fall back to: amount > 2× the typical range stored in memory
+- Example: "Vendor X averages $687 ± $285, this charge is $1,950 (mean + 4.4σ)"
 
 **H. New Vendor (Any Amount)**
 - Vendor with no history in agent memory
@@ -193,27 +209,44 @@ For each flagged anomaly:
 
 ---
 
-### Step 6: Update Agent Memory
+### Step 6: Update Vendor Baselines
 
-After each scan, update what you learned:
+After each scan, update baselines following the schema in `references/vendor-baseline-model.md`:
+
 ```
-1. For each vendor with no memory → create baseline from this scan:
+1. For each NEW vendor found in this scan (no existing baseline):
+   → Compute amount stats, frequency, categorization from the scan data
+   → Create a baseline:
    agentMemory(
      operation: "write",
-     category: "vendor",
-     subject: "<vendor name>",
-     memory: "<JSON string: {\"typical_amount_range\":[min,max],\"frequency\":\"monthly|weekly|quarterly|one-time\",\"usual_category\":\"<account>\",\"last_seen\":\"<date>\",\"transaction_count\":<N>}>",
+     category: "vendor_baseline",
+     subject: "baseline:<vendor_name_lowercase>",
+     memory: "<JSON per vendor-baseline-model schema>",
      confidence: 60
    )
 
-2. If a vendor was flagged but turns out normal → update memory:
+2. For existing vendors with new transactions:
+   → Merge new data into existing stats (recompute mean, stddev, etc.)
+   → Increment scan_count and transaction_count
+   → Update last_seen and updated_at
    agentMemory(
      operation: "update",
      memoryId: "<id from read>",
-     memory: "<updated JSON string with expanded typical_amount_range>",
-     confidence: 75
+     memory: "<updated JSON>",
+     confidence: <min(existing + 5, 90)>
    )
+
+3. If a vendor was flagged but human later clears it (false positive):
+   → Increment anomaly_history.times_cleared
+   → Expand amount range to include the cleared amount
+   → Bump confidence by +5
+
+4. If a vendor was flagged and human confirms anomaly:
+   → Increment anomaly_history.times_flagged
+   → Do NOT expand the amount range (the anomaly was real)
 ```
+
+**Tip:** For a comprehensive baseline build (rather than incremental updates during scans), use the `/build-baselines` command which processes 90+ days of history.
 
 ---
 
@@ -251,6 +284,7 @@ When running as part of the autonomous loop, anomaly detection should run:
 1. At the start of every weekly cycle (last 7 days)
 2. Before any month-end close
 3. After processing more than 20 transactions in a single session
+4. **First-time for a new client:** Run `/build-baselines full` first, then `/anomaly-scan`
 
 The autonomous loop should store the last scan timestamp in agentMemory:
 ```

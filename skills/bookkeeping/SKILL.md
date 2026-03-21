@@ -165,6 +165,9 @@ trails but do not require them.
   methodology and fuzzy matching guidance
 - **`references/categorization.md`** — Account categorization rules,
   common mappings, and consistency patterns
+- **`references/auto-categorization-model.md`** — Confidence scoring
+  model, learning loop from Review Queue, AI reasoning format, and
+  decision thresholds for auto-apply vs. flag-for-review
 - **`references/recurring-transactions.md`** — Recurring transaction
   detection, pattern matching, and missing transaction alerts
 - **`references/sales-tax.md`** — Sales tax handling for invoices,

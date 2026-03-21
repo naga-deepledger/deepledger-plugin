@@ -90,3 +90,49 @@ RECOMMENDATIONS
 ```
 
 For vendor deep-dive, add transaction-level table with dates, amounts, accounts.
+
+**Phase 6: Save Vendor Spend Snapshot to Agent Memory**
+
+After presenting results, save a vendor spend analysis snapshot to agent memory so
+the portal dashboard can display vendor intelligence without re-running the command:
+
+```
+agentMemory(
+  operation: "write" (or "update" if memoryId exists),
+  category: "vendor_spend_analysis",
+  subject: "latest_analysis",
+  memory: "<JSON string: {
+    \"report_date\": \"<ISO date>\",
+    \"period\": \"<e.g. 2026-03>\",
+    \"comparison_period\": \"<e.g. 2026-02>\",
+    \"total_expenses\": <number>,
+    \"total_expenses_prior\": <number>,
+    \"expense_change_pct\": <number>,
+    \"vendor_count\": <number>,
+    \"top_vendors\": [
+      {
+        \"name\": \"<vendor>\",
+        \"amount\": <number>,
+        \"pct_of_total\": <number>,
+        \"change_pct\": <number | null>,
+        \"trend\": \"Increasing\" | \"Decreasing\" | \"Stable\" | \"New\"
+      }
+    ],
+    \"flags\": [
+      {
+        \"type\": \"concentration_risk\" | \"accelerating\" | \"spike\" | \"new_vendor\" | \"missed_payment\" | \"category_mismatch\",
+        \"vendor\": \"<name>\",
+        \"detail\": \"<short description>\"
+      }
+    ],
+    \"flag_count\": <number>,
+    \"recommendations\": [\"<action item>\", ...]
+  }>",
+  confidence: 90
+)
+```
+
+If a memory with category="vendor_spend_analysis" and subject="latest_analysis" already
+exists, use operation: "update" with the memoryId to overwrite it.
+
+Limit `top_vendors` to the top 10 by spend amount to keep the snapshot compact.

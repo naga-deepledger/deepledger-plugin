@@ -93,3 +93,37 @@ Flag projection risks:
    - **Recommendations**: Specific action items (collect from [Customer], delay [Bill], etc.)
 
 Use plain language. Give specific numbers, not vague percentages.
+
+**Phase 4: Save Cash Flow Forecast to Agent Memory**
+
+After presenting results, save a cash flow forecast snapshot to agent memory so the
+portal dashboard can display projected cash positions without re-running the command:
+
+```
+agentMemory(
+  operation: "write" (or "update" if memoryId exists),
+  category: "cash_flow_forecast",
+  subject: "latest_forecast",
+  memory: "<JSON string: {
+    \"report_date\": \"<ISO date>\",
+    \"period\": \"<e.g. 2026-03>\",
+    \"current_cash\": <number>,
+    \"burn_rate_monthly\": <number>,
+    \"runway_months\": <number>,
+    \"projected_cash_30d\": <number>,
+    \"projected_cash_60d\": <number>,
+    \"projected_cash_90d\": <number>,
+    \"ar_total\": <number>,
+    \"ap_total\": <number>,
+    \"recurring_income_monthly\": <number>,
+    \"recurring_expense_monthly\": <number>,
+    \"risk_level\": \"healthy\" | \"watch\" | \"warning\" | \"critical\",
+    \"top_risks\": [\"<risk description>\", ...],
+    \"top_recommendations\": [\"<action item>\", ...]
+  }>",
+  confidence: 90
+)
+```
+
+If a memory with category="cash_flow_forecast" and subject="latest_forecast" already
+exists, use operation: "update" with the memoryId to overwrite it.

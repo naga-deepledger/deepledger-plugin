@@ -4,9 +4,15 @@ allowed-tools: ["mcp__plugin_deepledger_deepledger__*"]
 argument-hint: [vendor name | transaction description | --scan]
 ---
 
-Auto-categorize transactions using learned vendor patterns. Looks up agent
-memory for known vendors, checks transaction history for prior categorizations,
-and proposes the correct account with confidence scores.
+Auto-categorize transactions using the DeepLedger confidence scoring model.
+Combines four evidence sources — agent memory (human-approved patterns),
+transaction history, vendor name signals, and description keywords — into
+a single confidence score that determines whether to auto-apply, flag for
+review, or ask.
+
+**IMPORTANT:** Before categorizing, read the confidence model reference at
+`skills/bookkeeping/references/auto-categorization-model.md` for the
+complete scoring rules and decision thresholds.
 
 If $ARGUMENTS is a vendor name or transaction description, categorize that
 specific transaction/vendor. If $ARGUMENTS is "--scan" or empty, scan recent
@@ -35,7 +41,13 @@ Execute ALL autonomously:
    - Suggested Account (AcctNum + Name)
    - Confidence % with source ("from memory", "from history", "inferred")
    - If confidence < 70%, show 2–3 alternative accounts
-6. **Update memory**: If confidence ≥ 90% and no existing memory, save the
+6. **Generate AI reasoning**: Build a reasoning string explaining the
+   categorization decision. Include: (a) which evidence sources were checked,
+   (b) why this category was chosen, (c) confidence source and score,
+   (d) alternatives if confidence < 80%. This reasoning is passed to
+   qbFlagForReview as `aiReasoning` and displayed in the portal Review
+   Queue's expandable "Why?" section.
+7. **Update memory**: If confidence ≥ 90% and no existing memory, save the
    categorization pattern via agentMemory (write) so future transactions
    auto-categorize without lookup
 
@@ -45,8 +57,8 @@ Execute ALL autonomously:
 2. Group transactions by vendor name
 3. For each unique vendor, run the single-transaction lookup above (steps 1–4)
 4. Present a summary table:
-   | Vendor | Suggested Account | Confidence | Source |
-   |--------|------------------|-----------|--------|
+   | Vendor | Suggested Account | Confidence | Source | Reasoning |
+   |--------|------------------|-----------|--------|-----------|
 5. Highlight:
    - Vendors where the current account differs from the suggested one
      (possible miscategorization)
