@@ -18,7 +18,7 @@ Execute autonomously — no intermediate questions.
 
 ### 1. Check for Existing Baselines
 ```
-agentMemory(action: "read", organizationId: <org_id>, category: "vendor_baseline")
+agentMemory(operation: "read", category: "vendor_baseline")
 ```
 - If baselines exist → this is an UPDATE scan (merge new data into existing)
 - If no baselines → this is a FIRST BUILD (create from scratch)

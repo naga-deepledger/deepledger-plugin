@@ -50,7 +50,7 @@ Check each item and report status (Pass / Warning / Action Needed):
 
 Present as a structured report:
 
-1. **Close Readiness Score**: X/15 checks passed
+1. **Close Readiness Score**: X/16 checks passed
 2. **Summary**: One-line assessment ("Books are clean" or "3 items need attention")
 3. **Checklist Table**: Each item with status icon and finding
 4. **Action Items**: Specific transactions that need attention, with:

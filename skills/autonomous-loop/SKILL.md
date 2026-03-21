@@ -65,7 +65,7 @@ For each work item:
 1. Identify the client/organization from the task context
 
 2. Load client memory:
-   → Use agentMemory(action: "read", clientId: <org_id>)
+   → Use agentMemory(operation: "read")
    → This contains: vendor→category mappings, recurring patterns,
      preferred accounts, past corrections, client-specific rules
 

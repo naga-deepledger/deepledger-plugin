@@ -6,55 +6,45 @@ argument-hint: <create|list|edit|delete> [details]
 
 Manage recurring transactions in QuickBooks: "$ARGUMENTS"
 
-**API Status:** Recurring transactions are **read-only via API** — you can
-query and list them, but cannot create, update, or delete. Creating and
-editing requires browser automation via the QBO UI.
+**API Status:** Recurring transactions support **list, read, create, and delete
+via the `qbRecurringTransaction` API tool**. Browser automation is only needed
+for **editing** an existing recurring template (the QuickBooks API does not
+support updates to existing recurring transactions — delete and recreate instead).
 
-**Prerequisites for create/edit/delete:** User must be logged into QuickBooks
+**Prerequisites for browser operations:** User must be logged into QuickBooks
 Online in their browser.
 
 ## Operations
 
-### List Recurring Transactions (API — no browser needed)
-1. Query recurring transactions via qbFetchTransactions (if RecurringTransaction
-   entity is supported) or qbReports
-2. If API access works, present the list directly — no browser needed
-3. If API doesn't expose recurring transactions, fall back to browser:
-   Navigate to Settings (gear icon) → Recurring Transactions, take screenshot
-4. Present a table: Type, Template Name, Vendor/Customer, Amount, Frequency, Next Date
+### List Recurring Transactions (API)
+1. Call `qbRecurringTransaction(operation: "list")` — returns all recurring templates
+2. Optionally filter by type: `qbRecurringTransaction(operation: "list", filterType: "Bill")`
+3. Present a table: Type, Template Name, Vendor/Customer, Amount, Frequency, Next Date
 
-### Create Recurring Transaction
+### Create Recurring Transaction (API)
 1. Determine transaction type from user's description:
    - "recurring bill" → Bill
-   - "recurring expense" → Expense (Check/Credit Card)
+   - "recurring expense" → Purchase
    - "recurring invoice" → Invoice
-   - "monthly rent" → Expense or Bill (infer from context)
-2. Look up vendor/customer and account via API (qbMasterData) to verify they exist
-3. Navigate to Settings → Recurring Transactions → New
-4. Select transaction type
-5. Fill in template details:
-   - Template name (auto-generate from vendor + description)
-   - Type: Scheduled (auto-create), Reminder, or Unscheduled
-   - Vendor/customer, account, amount, memo
-   - Interval: Daily/Weekly/Monthly/Yearly
-   - Start date, end date (or no end)
-6. Take screenshot for confirmation
-7. On user approval, click Save template
+   - "monthly rent" → Bill or Purchase (infer from context)
+2. Look up vendor/customer and account via `qbMasterData` to get IDs
+3. Call `qbRecurringTransaction(operation: "create", createTransactionType: <type>, recurringInfo: { name, recurType, scheduleInfo }, vendorId/customerId, lines)`
+   - recurType: "Automated" (auto-creates), "Reminder" (notifies), or "Unscheduled" (template only)
+   - scheduleInfo: intervalType (Daily/Weekly/Monthly/Yearly), numInterval, dayOfMonth, startDate
+4. Confirm creation with the template ID
 
-### Edit Recurring Transaction
+### Edit Recurring Transaction (Browser — API does not support update)
 1. Navigate to Settings → Recurring Transactions
 2. Find the template by name or description
-3. Click to edit
-4. Make the requested changes
-5. Take screenshot for confirmation
-6. On approval, save
+3. Click to edit and make the requested changes
+4. Take screenshot for confirmation
+5. On approval, save
 
-### Delete Recurring Transaction
-1. Navigate to Settings → Recurring Transactions
-2. Find the template
-3. Show current details to user
-4. On explicit confirmation, delete
-5. Confirm deletion
+### Delete Recurring Transaction (API)
+1. Call `qbRecurringTransaction(operation: "read", recurringTransactionId: <id>)` to get syncToken
+2. Show current details to user for confirmation
+3. On explicit confirmation, call `qbRecurringTransaction(operation: "delete", recurringTransactionId, syncToken, transactionType)`
+4. Confirm deletion
 
 ## Common Recurring Setups
 
