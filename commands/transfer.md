@@ -17,21 +17,17 @@ Steps:
    - Date (default today)
 2. Look up both accounts via qbMasterData (type: "Account")
    - Match by name — auto-select if obvious
-   - If only one account mentioned, ask for the other
+   - If only one account mentioned, escalate via contactHuman for the other
    - Both must be Bank, CreditCard, or OtherCurrentAsset type
-3. Check for duplicates silently via qbFetchTransactions
-4. Propose the transfer with:
-   - Source account name, AcctNum, and Account ID
-   - Destination account name, AcctNum, and Account ID
-   - Amount and date
-   - Auto-generated memo: "Transfer: [source] → [destination]"
-5. On confirmation, execute via qbTransfer:
+3. Check for duplicates via qbFetchTransactions
+4. If all data is clear, execute immediately via qbTransfer:
    - fromAccountId: source account ID
    - toAccountId: destination account ID
    - amount: transfer amount
    - txnDate: YYYY-MM-DD
-   - memo: descriptive memo
-6. Confirm success with transaction ID
+   - memo: auto-generated "Transfer: [source] → [destination]"
+5. Log action via agentLog
+6. Report success with transaction ID
 
 **Critical:** Transfers are NOT expenses. Moving money between your own
 accounts doesn't change total assets (just shifts between accounts).

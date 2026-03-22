@@ -58,7 +58,9 @@ Present as a structured report:
    - Transaction details (date, amount, vendor, current account)
    - Suggested correction
 5. **Proposed Journal Entries**: If adjustments are needed (depreciation,
-   accruals, reclassifications), propose them — ready for user approval
+   accruals, reclassifications), record them autonomously when document-backed
+   and confident (≥80%). Escalate via contactHuman for entries that require
+   judgment (materiality thresholds, timing decisions, unusual adjustments)
 6. **Reminder**: Items that can't be verified programmatically (bank reconciliation,
    physical inventory counts, etc.)
 

@@ -42,9 +42,10 @@ Online in their browser.
 
 ### Delete Recurring Transaction (API)
 1. Call `qbRecurringTransaction(operation: "read", recurringTransactionId: <id>)` to get syncToken
-2. Show current details to user for confirmation
-3. On explicit confirmation, call `qbRecurringTransaction(operation: "delete", recurringTransactionId, syncToken, transactionType)`
-4. Confirm deletion
+2. Deleting a recurring template is destructive — escalate via contactHuman
+   for confirmation before proceeding
+3. On explicit human confirmation, call `qbRecurringTransaction(operation: "delete", recurringTransactionId, syncToken, transactionType)`
+4. Log action via agentLog and confirm deletion
 
 ## Common Recurring Setups
 

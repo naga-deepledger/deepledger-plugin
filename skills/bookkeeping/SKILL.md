@@ -6,8 +6,11 @@ description: >
   "record a sale", "create a journal entry", "void a transaction",
   "deposit funds", "issue a refund", "create a vendor", "add a customer",
   "categorize a transaction", "check for duplicates", or any QuickBooks
-  transaction recording task.
-version: 2.0.0
+  transaction recording task. Also activates proactively when processing
+  documents, bank feeds, AI tasks, or approved review queue items. Operates
+  autonomously — records transactions directly when document-backed and
+  confident, escalates only when information is missing or accuracy is at risk.
+version: 3.0.0
 ---
 
 ## Purpose
@@ -19,65 +22,88 @@ incorrect accounting.
 
 ## Operating Principle
 
-**Act first, ask only when necessary.** The goal is clean, accurate
-accounting with minimal back-and-forth. Users should be able to say
-"I paid $200 to Staples for office supplies" and get a ready-to-confirm
-proposal without any intermediate questions.
+**Execute autonomously with document-backed confidence.** The goal is clean,
+audit-ready books maintained proactively. Every transaction recorded must be
+backed by a source document and verified against duplicates. Every number
+impacts financials, tax returns, and disclosures — accuracy is non-negotiable.
 
 ## Operating Framework
 
-Analyze → Propose → Confirm → Execute
+Analyze → Verify → Execute → Log
 
-Every write operation follows this cycle. Read operations (fetching data,
-reports, queries) execute autonomously without confirmation.
+Every write operation follows this cycle. Verification means: (1) source
+document exists, (2) master data confirmed via qbMasterData, (3) no
+duplicates via qbFetchTransactions, (4) confidence score ≥ 80%. Read
+operations execute autonomously without any checks.
 
-## When to Ask vs. When to Infer
+## Document-Backing Rule (CRITICAL)
 
-### NEVER ask about (always infer):
+Every transaction MUST be backed by a source document before recording.
+Acceptable sources:
+- **Documents table** — fetchDocuments() for uploaded receipts, invoices, statements
+- **Bank feed** — qbCategorizeBankFeed for Teller bank transactions
+- **Local files** — receipts or invoices from local folders
+- **Email/Gmail** — invoice attachments, payment confirmations
+- **Google Drive / Shared Drive** — shared documents, statements
+- **CSV/Excel uploads** — bulk transaction imports
+- **User-provided description** — sufficient detail (vendor, amount, date, purpose)
+
+If no source document exists, escalate via contactHuman requesting the
+supporting document before recording. Never record undocumented transactions.
+
+## When to Execute vs. When to Escalate
+
+### Execute AUTONOMOUSLY (always — don't ask):
 - **Transaction type** — determine from context ("paid" = expense,
   "got a bill" = bill, "invoiced" = invoice)
 - **Date** — use the date given; if none given, use today
 - **Account/category** — if vendor has history, follow the pattern silently;
   if vendor is new but category is obvious (e.g., "Uber" → Travel), use it
 - **Single vendor/customer match** — if only one result or one obvious
-  fuzzy match, use it without confirming
+  fuzzy match, use it directly
 - **No duplicates found** — proceed silently, don't report "no duplicates"
 - **Payment method** — infer from context or use reasonable default
 - **Memo** — auto-generate from the transaction description
+- **Document attachment** — attach source doc to QB transaction after recording
 
-### ALWAYS ask about (ambiguity causes bad accounting):
+### Escalate via contactHuman ONLY when (inaccuracy risk):
+- **No source document** — request the supporting document
 - **Multiple vendor/customer matches** — present options, ask which one
 - **No category history AND genuinely ambiguous** — show top options, ask
 - **Missing amount** — cannot proceed without this
 - **Purchases over $5,000** — "Fixed asset or expense?"
 - **Potential duplicate detected** — show the match, ask if this is new
 - **Multiple outstanding bills/invoices** — ask which to apply payment to
+- **Confidence < 60%** — genuinely uncertain, need human input
 
 ## Transaction Recording Process
 
-### Step 1: Infer and Fetch (autonomous)
-1. Parse the user's description to determine type, amount, entity, date, category
+### Step 1: Identify Source Document
+1. Check documents table via fetchDocuments() for matching uploads
+2. Check bank feed via qbCategorizeBankFeed for matching bank transactions
+3. If from user description: verify sufficient detail (vendor, amount, date, purpose)
+4. If no source found: escalate via contactHuman requesting supporting document — STOP
+
+### Step 2: Infer and Fetch
+1. Parse the source document or description to determine type, amount, entity, date, category
 2. Fetch master data via qbMasterData — vendors, customers, accounts
 3. If entity has a single match, select it. If fuzzy match is obvious, select it
 4. Fetch entity's recent transactions to determine categorization pattern
 
-### Step 2: Check Duplicates (autonomous)
+### Step 3: Verify (autonomous)
 1. Query via qbFetchTransactions for same entity, date range (±3 days), similar amount
-2. If NO matches → proceed silently (do not mention duplicate check to user)
-3. If potential match found → show it and ask if this is a new transaction
+2. If NO matches → proceed (do not mention duplicate check)
+3. If potential match found → escalate via contactHuman, ask if this is a new transaction
+4. Compute confidence score (base 50% + vendor history + amount range + description clarity)
+5. Confidence ≥ 80%: proceed to execute
+6. Confidence 60-79%: execute but flag for review queue
+7. Confidence < 60%: escalate via contactHuman
 
-### Step 3: Propose (present complete, ready to confirm)
-Display a clean proposal with:
-- Transaction type
-- Vendor/customer name and ID
-- Account name, AcctNum (4-6 digit code), and Account ID
-- Line items with descriptions and amounts
-- Total amount and date
-- Any auto-inferred fields marked with source: "(based on history)" or "(inferred)"
-
-### Step 4: Confirm and Execute
-- Wait for user confirmation ("yes", "confirm", "go ahead", etc.)
-- Execute using the appropriate tool
+### Step 4: Execute and Log
+- Execute using the appropriate tool immediately
+- Attach source document to QB transaction via qbGetUploadUrl
+- Log action via agentLog with confidence score and decision reasoning
+- Update agentMemory with vendor→category pattern
 - Report success with transaction ID
 
 ## Tool Selection Guide
@@ -122,38 +148,46 @@ done through the QBO API:
 | Field | Default | Override |
 |-------|---------|---------|
 | Date | Today (if not specified and transaction is recent) | User specifies a date |
-| Payment method | None — leave blank unless user specifies | User says "by card", "by check", etc. |
+| Payment method | Infer from context or use reasonable default | User specifies method explicitly |
 | Deposit account | Undeposited Funds (for received payments) | User specifies account |
 | Memo | Auto-generated from description | User provides memo |
 | Category | Step 1: vendor history → Step 2: description + vendor name → Step 3: ask | User requests different account |
 
 ## Capitalization Threshold
 
-For purchases over $5,000 (or organization's threshold), ask:
-"This is over [threshold] — should this be recorded as a fixed asset or expensed?"
+For purchases over $5,000 (or organization's threshold), escalate via
+contactHuman: "This purchase is over [threshold] — should this be recorded
+as a fixed asset or expensed?"
 
-Under $5,000: always expense without asking.
+Under $5,000: always expense autonomously.
 
 ## Before Recording Payments
 
 Check for outstanding invoices/bills first via qbFetchTransactions.
-- Exactly one match → link automatically, mention it in proposal
-- Multiple matches → ask which one(s) to apply
+- Exactly one match → link automatically
+- Multiple matches → escalate via contactHuman asking which one(s) to apply
 - No matches → proceed as standalone payment
 
 ## Batch Processing
 
 When multiple transactions are provided at once:
-1. Process all of them, inferring details for each
-2. Present a summary table of all proposed transactions
-3. Get a single bulk confirmation
-4. Execute all and report results
+1. Process all of them autonomously, verifying each against source documents
+2. Execute each transaction that passes verification (document-backed, duplicate-checked, confident)
+3. Flag uncertain ones for review queue or escalate via contactHuman
+4. Present a summary report of all actions taken (recorded, flagged, escalated)
 
 ## Optional Fields
 
-Prompt for class, billable status, check number, and reference number
-only when relevant to the transaction type. Suggest these for audit
-trails but do not require them.
+Include class, billable status, check number, and reference number
+when available from the source document. These strengthen the audit trail.
+
+## Document Attachment (REQUIRED)
+
+After every successful transaction recording:
+1. If source is from documents table → attach via qbGetUploadUrl
+2. If source is bank feed → document is auto-linked via Teller
+3. If source is user description → note in memo field as source reference
+4. Log the attachment status in agentLog
 
 ## Additional Resources
 

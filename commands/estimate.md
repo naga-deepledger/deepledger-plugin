@@ -13,21 +13,19 @@ Steps:
 1. Parse the description for: customer, items/services, amounts, date
 2. Look up customer via qbMasterData — auto-select if single/obvious match
 3. Look up items or service accounts — use history if available
-4. Check for duplicate estimates silently
-5. Propose the estimate with:
-   - Customer name and ID
-   - Date (default today) and expiration date (default 30 days)
-   - Line items with descriptions, quantities, rates, amounts
-   - Total
-6. On confirmation, create via qbEstimate with:
-   - customerId, txnDate, expirationDate
+4. Check for duplicate estimates via qbFetchTransactions
+5. If all data is clear, execute immediately via qbEstimate with:
+   - customerId, txnDate, expirationDate (default 30 days)
    - lines: [{amount, description, itemId/quantity/unitPrice}]
    - Optional: billEmail, customerMemo, salesTermId
-7. Confirm success with estimate ID
+6. Log action via agentLog
+7. Report success with estimate ID
+
+If customer match is ambiguous or amount is missing, escalate via contactHuman.
 
 **Status tracking:** Estimates support status: Pending, Accepted, Closed,
 Rejected. Update via qbEstimate with estimateId and txnStatus.
 
-**Conversion:** When an estimate is accepted, offer to convert it to an
-invoice: "This estimate was accepted — shall I create an invoice from it?"
-Create the invoice with matching line items via qbInvoice.
+**Conversion:** When an estimate is accepted, automatically convert it to an
+invoice by creating the invoice with matching line items via qbInvoice.
+Log the conversion via agentLog.

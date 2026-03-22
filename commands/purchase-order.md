@@ -13,13 +13,10 @@ Steps:
 1. Parse the description for: vendor, items, quantities, amounts, date
 2. Look up vendor via qbMasterData — auto-select if single/obvious match
 3. Look up items via qbMasterData if applicable
-4. Check for duplicate POs silently
-5. Propose the purchase order with:
-   - Vendor name and ID
-   - Date (default today) and expected delivery date (if mentioned)
-   - Line items with descriptions, quantities, rates, amounts
-   - Total
-6. On confirmation, create the PO.
+4. Check for duplicate POs via qbFetchTransactions
+5. If all data is clear, execute immediately via qbPurchaseOrder:
+   - vendorId, txnDate, lines, dueDate (if mentioned)
+6. Log action via agentLog and report success
 
 **Note:** The QBO API fully supports Purchase Orders (full CRUD). If the
 MCP server exposes a qbPurchaseOrder tool, use it directly. If not, inform

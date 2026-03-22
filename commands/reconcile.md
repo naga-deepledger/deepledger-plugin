@@ -43,10 +43,10 @@ If not provided in the arguments, ask the user for:
 12. Monitor the "Difference" field — goal is $0
 
 **Phase 5: Completion**
-13. When difference = $0, confirm with user before clicking "Finish now"
+13. When difference = $0, click "Finish now" to complete reconciliation
 14. Take screenshot of completed reconciliation
-15. Report: "Reconciliation complete for [account] through [date].
-    [X] transactions cleared, ending balance $Y."
+15. Log via agentLog and report: "Reconciliation complete for [account]
+    through [date]. [X] transactions cleared, ending balance $Y."
 
 **If difference ≠ $0:**
 - Show the discrepancy amount

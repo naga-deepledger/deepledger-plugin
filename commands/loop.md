@@ -37,9 +37,11 @@ Tool Usage Rules:
 - Ambiguous "bill" with unknown entity → ask via `contactHuman` to clarify customer vs vendor
 
 Workflow Safety Rules:
+- **ALWAYS** verify source document exists before recording (documents table, bank feed, or sufficient user detail)
 - **ALWAYS** run `qbFetchTransactions` before creating any transaction (duplicate check)
 - **ALWAYS** verify vendor/customer exists via `qbMasterData` before referencing in transaction
-- Confidence ≥ 80%: act autonomously. 60-79%: act + flag. < 60%: `contactHuman` first
+- **ALWAYS** attach source document to QB transaction after recording via `qbGetUploadUrl`
+- Confidence ≥ 80% + document-backed: execute autonomously. 60-79%: execute + flag for review. < 60% or no document: `contactHuman` first
 
 ### 1. Gather pending work
 - Fetch AI tasks: `fetchAiTasks(status: "scheduled")` and `fetchAiTasks(status: "queued")`

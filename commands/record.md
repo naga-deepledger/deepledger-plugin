@@ -6,37 +6,34 @@ argument-hint: <description of transaction>
 
 Record a transaction based on the user's description: "$ARGUMENTS"
 
-Operate autonomously — infer everything you can from the description,
-vendor history, and smart defaults. Only ask when ambiguity would cause
-incorrect accounting.
+Operate fully autonomously — execute directly when document-backed and
+confident. Every number impacts financials, tax returns, and disclosures.
+Escalate via contactHuman only when information is missing or accuracy is
+at risk.
 
 Steps:
-1. Parse the description to determine (infer ALL of these, don't ask):
+1. **Identify source document** — check documents table (fetchDocuments),
+   bank feed (qbCategorizeBankFeed), or verify user description has
+   sufficient detail (vendor, amount, date, purpose). If no source: escalate
+   via contactHuman requesting the document — STOP.
+2. **Parse and infer** (infer ALL of these, don't ask):
    - Transaction type — "paid" = expense, "bill from" = bill, "invoice" = invoice, etc.
    - Amount
    - Vendor or customer name
    - Date — use what's given, default to today if not specified
    - Account/category — check vendor history first, then infer from name/description
-2. Use qbMasterData to look up relevant vendors/customers/accounts
-   - Single match or obvious fuzzy match → use it, don't confirm
-   - Multiple ambiguous matches → list them and ask which one
-   - Not found → ask if they want to create it
-3. Check vendor's recent transactions to determine categorization pattern
-   - Consistent history → use that account silently
+3. **Verify master data** via qbMasterData:
+   - Single match or obvious fuzzy match → use it directly
+   - Multiple ambiguous matches → escalate via contactHuman
+   - Not found → escalate via contactHuman asking if should create it
+4. **Check categorization pattern** from vendor's recent transactions:
+   - Consistent history → use that account
    - No history but obvious category → infer from vendor name
-   - Genuinely ambiguous → ask with top options
-4. Check for duplicates via qbFetchTransactions (silently):
-   - No matches → proceed without mentioning duplicate check
-   - Potential match found → show it, ask if this is new
-5. Propose the transaction with full details:
-   - Transaction type
-   - Vendor/customer name and ID
-   - Account name, AcctNum (4-6 digit code), and Account ID
-   - Line items with descriptions and amounts
-   - Total amount and date
-   - Mark inferred fields: "(based on history)" or "(inferred)"
-6. Wait for user confirmation — present a clean, ready-to-approve proposal
-7. Create using the appropriate tool:
+   - Genuinely ambiguous → escalate via contactHuman with top options
+5. **Check duplicates** via qbFetchTransactions:
+   - No matches → proceed
+   - Potential match found → escalate via contactHuman, ask if new
+6. **Execute immediately** using the appropriate tool:
    - Paid expense (card/check/cash) → qbExpense
    - Vendor bill (unpaid) → qbBill
    - Bill payment → qbBillPayment
@@ -48,19 +45,22 @@ Steps:
    - Vendor credit or customer credit memo → qbCredit
    - Bank transfer or credit card payment → qbTransfer
    - Adjusting entry → qbJournalEntry
-8. Confirm success with transaction ID and summary
+7. **Attach source document** to QB transaction via qbGetUploadUrl
+8. **Log and learn** — agentLog for audit trail, agentMemory for patterns
+9. Report success with transaction ID and summary
 
-Smart defaults (apply without asking):
+Smart defaults (apply autonomously):
 - Date not specified → today
-- Payment method → only infer when user specifies ("by card", "check", etc.);
-  otherwise leave blank for user to confirm in proposal
+- Payment method → infer from context or use reasonable default
 - Memo → auto-generate from transaction description
 - Under $5,000 → always expense (don't ask about capitalization)
 - Category → vendor history first, then description keywords, then
-  single-purpose vendor name; ask ONLY for multi-purpose vendors
+  single-purpose vendor name; escalate ONLY for multi-purpose vendors
   (Amazon, Costco, etc.) when description is vague
 
-Only ask about:
+Only escalate (via contactHuman) for:
+- No source document (request it)
 - Purchases over $5,000: "Fixed asset or expense?"
 - Outstanding invoices/bills when recording a payment (if multiple exist)
 - Missing amount (cannot proceed without it)
+- Potential duplicates detected
