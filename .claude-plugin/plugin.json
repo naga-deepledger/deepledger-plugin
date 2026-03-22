@@ -1,7 +1,7 @@
 {
   "name": "deepledger",
-  "version": "1.0.0",
-  "description": "AI bookkeeper with QuickBooks Online integration via DeepLedger",
+  "version": "2.0.0",
+  "description": "Autonomous AI bookkeeper — proactively records document-backed transactions, maintains audit-ready books, and self-improves through pattern learning. QuickBooks Online integration via DeepLedger.",
   "author": {
     "name": "DeepLedger",
     "url": "https://deepledger.ai"

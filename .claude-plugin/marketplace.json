@@ -9,8 +9,8 @@
   "plugins": [
     {
       "name": "deepledger",
-      "description": "AI bookkeeper with QuickBooks Online integration — record transactions, generate financial reports, and get actionable business insights through natural language",
-      "version": "1.0.0",
+      "description": "Autonomous AI bookkeeper — proactively records document-backed transactions, maintains audit-ready books, and self-improves through pattern learning. QuickBooks Online integration via DeepLedger.",
+      "version": "2.0.0",
       "author": {
         "name": "DeepLedger",
         "email": "support@deepledger.ai"
