@@ -4,10 +4,11 @@ Autonomous AI bookkeeper with QuickBooks Online integration. Record
 transactions, generate financial reports, and get actionable business
 insights — all through natural language with minimal back-and-forth.
 
-DeepLedger acts like an expert bookkeeper: it infers transaction types,
-auto-categorizes expenses based on vendor history, checks for duplicates
-silently, and only asks questions when the answer would affect accounting
-accuracy.
+DeepLedger acts like an expert autonomous bookkeeper: it infers transaction
+types, auto-categorizes expenses based on vendor history, checks for
+duplicates, verifies source documents, and records transactions directly.
+It only escalates when information is missing or accuracy is at risk.
+Every transaction is document-backed and audit-ready.
 
 ## Installation
 
@@ -102,13 +103,14 @@ Just describe what happened — DeepLedger handles the rest:
 
 DeepLedger will automatically:
 - Identify this as a paid expense (→ qbExpense)
+- Verify source document exists (receipt, bank feed, or user description)
 - Find "Staples" in your vendor list
 - Check Staples' transaction history to determine the right expense account
 - Default to today's date
-- Check for duplicate transactions (silently — no noise if none found)
-- Present a ready-to-confirm proposal with all details filled in
-
-You just confirm and it's recorded.
+- Check for duplicate transactions
+- Record the transaction directly (no confirmation needed)
+- Attach the source document to the QB transaction
+- Log the action for audit trail
 
 ### Smart Inference
 
@@ -173,14 +175,19 @@ recommendations — no follow-up prompts needed.
 
 ## Safety Features
 
-All write operations follow a strict **Analyze → Propose → Confirm → Execute**
+All write operations follow a strict **Analyze → Verify → Execute → Log**
 workflow:
 
-- Master data is verified before proposing any transaction
-- Duplicate checks run automatically (silently if no matches found)
-- You must explicitly confirm before any transaction is recorded
-- Void/delete operations require additional explicit confirmation
-- Purchases over $5,000 trigger an asset-vs-expense question
+- Every transaction must be backed by a source document (receipt, bank feed,
+  invoice, email, or detailed user description)
+- Master data is verified before any transaction is recorded
+- Duplicate checks run automatically before every write
+- Confidence scoring determines action: ≥80% = execute, 60-79% = execute + flag
+  for review, <60% = escalate to human via contactHuman
+- Void/delete operations require human confirmation via contactHuman
+- Purchases over $5,000 trigger escalation for asset-vs-expense decision
+- Source documents are attached to QB transactions after recording
+- Every action is logged via agentLog for complete audit trail
 
 ## Requirements
 
