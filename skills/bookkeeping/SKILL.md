@@ -48,8 +48,8 @@ Acceptable sources:
 - **CSV/Excel uploads** — bulk transaction imports
 - **User-provided description** — sufficient detail (vendor, amount, date, purpose)
 
-If no source document exists, escalate via contactHuman requesting the
-supporting document before recording. Never record undocumented transactions.
+If no source document exists, skip this transaction.
+Never record undocumented transactions.
 
 ## When to Execute vs. When to Escalate
 
@@ -66,7 +66,7 @@ supporting document before recording. Never record undocumented transactions.
 - **Memo** — auto-generate from the transaction description
 - **Document attachment** — attach source doc to QB transaction after recording
 
-### Escalate via contactHuman ONLY when (inaccuracy risk):
+### Flag for review ONLY when (inaccuracy risk):
 - **No source document** — request the supporting document
 - **Multiple vendor/customer matches** — present options, ask which one
 - **No category history AND genuinely ambiguous** — show top options, ask
@@ -82,7 +82,7 @@ supporting document before recording. Never record undocumented transactions.
 1. Check documents table via fetchDocuments() for matching uploads
 2. Check bank feed via qbCategorizeBankFeed for matching bank transactions
 3. If from user description: verify sufficient detail (vendor, amount, date, purpose)
-4. If no source found: escalate via contactHuman requesting supporting document — STOP
+4. If no source found: skip this transaction
 
 ### Step 2: Infer and Fetch
 1. Parse the source document or description to determine type, amount, entity, date, category
@@ -93,16 +93,15 @@ supporting document before recording. Never record undocumented transactions.
 ### Step 3: Verify (autonomous)
 1. Query via qbFetchTransactions for same entity, date range (±3 days), similar amount
 2. If NO matches → proceed (do not mention duplicate check)
-3. If potential match found → escalate via contactHuman, ask if this is a new transaction
+3. If potential match found → flag for review, ask if this is a new transaction
 4. Compute confidence score (base 50% + vendor history + amount range + description clarity)
 5. Confidence ≥ 80%: proceed to execute
 6. Confidence 60-79%: execute but flag for review queue
-7. Confidence < 60%: escalate via contactHuman
+7. Confidence < 60%: flag for review
 
-### Step 4: Execute and Log
+### Step 4: Execute
 - Execute using the appropriate tool immediately
 - Attach source document to QB transaction via qbGetUploadUrl
-- Log action via agentLog with confidence score and decision reasoning
 - Update agentMemory with vendor→category pattern
 - Report success with transaction ID
 
@@ -155,8 +154,8 @@ done through the QBO API:
 
 ## Capitalization Threshold
 
-For purchases over $5,000 (or organization's threshold), escalate via
-contactHuman: "This purchase is over [threshold] — should this be recorded
+For purchases over $5,000 (or organization's threshold), flag for review:
+"This purchase is over [threshold] — should this be recorded
 as a fixed asset or expensed?"
 
 Under $5,000: always expense autonomously.
@@ -165,7 +164,7 @@ Under $5,000: always expense autonomously.
 
 Check for outstanding invoices/bills first via qbFetchTransactions.
 - Exactly one match → link automatically
-- Multiple matches → escalate via contactHuman asking which one(s) to apply
+- Multiple matches → flag for review asking which one(s) to apply
 - No matches → proceed as standalone payment
 
 ## Batch Processing
@@ -173,7 +172,7 @@ Check for outstanding invoices/bills first via qbFetchTransactions.
 When multiple transactions are provided at once:
 1. Process all of them autonomously, verifying each against source documents
 2. Execute each transaction that passes verification (document-backed, duplicate-checked, confident)
-3. Flag uncertain ones for review queue or escalate via contactHuman
+3. Flag uncertain ones for review queue
 4. Present a summary report of all actions taken (recorded, flagged, escalated)
 
 ## Optional Fields
@@ -187,7 +186,6 @@ After every successful transaction recording:
 1. If source is from documents table → attach via qbGetUploadUrl
 2. If source is bank feed → document is auto-linked via Teller
 3. If source is user description → note in memo field as source reference
-4. Log the attachment status in agentLog
 
 ## Additional Resources
 

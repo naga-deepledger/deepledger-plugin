@@ -159,7 +159,7 @@ MEDIUM RISK triggers (+20 each):
   +20  End-of-period spike >$2,000
 
 Risk levels:
-  80-100: CRITICAL — escalate immediately via contactHuman
+  80-100: CRITICAL — add to review queue with high priority
   60-79:  HIGH — add to review queue, notify
   40-59:  MEDIUM — add to review queue
   20-39:  LOW — note in agent log only
@@ -175,36 +175,22 @@ For each flagged anomaly:
 **CRITICAL (80-100):**
 ```
 1. Do NOT record or approve the transaction
-2. Add to review_queue with high priority
-3. Use contactHuman to notify immediately:
-   contactHuman(
-     action: "send",
-     subject: "🚨 Critical anomaly: [vendor] [amount]",
-     context: "Found a critical anomaly in your books:\n
-               Transaction: [description]\n
-               Amount: $[amount]\n
-               Date: [date]\n
-               Reason flagged: [specific anomaly reason]\n
-               Historical baseline: [what's normal for this vendor]\n
-               Action needed: Please review and approve/reject."
-   )
+2. Add to review_queue with high priority and detailed reason
 ```
 
 **HIGH (60-79):**
 ```
 1. Add to review_queue (status: "pending", ai_confidence: <risk_as_decimal>)
-2. Log via agentLog (action: "flagged_anomaly", outcome: "pending_review")
 ```
 
 **MEDIUM (40-59):**
 ```
 1. Add to review_queue with lower priority
-2. Log via agentLog
 ```
 
 **LOW (0-39):**
 ```
-1. Log only via agentLog (action: "anomaly_scan_clean")
+1. No action needed
 ```
 
 ---
@@ -286,17 +272,7 @@ When running as part of the autonomous loop, anomaly detection should run:
 3. After processing more than 20 transactions in a single session
 4. **First-time for a new client:** Run `/build-baselines full` first, then `/anomaly-scan`
 
-The autonomous loop should store the last scan timestamp in agentMemory:
-```
-agentMemory(
-  operation: "write",
-  category: "anomaly_scan",
-  subject: "last_run",
-  memory: "<JSON string: {\"timestamp\":\"<ISO datetime>\",\"transactions_scanned\":<N>,\"anomalies_found\":<M>}>",
-  confidence: 100
-)
-```
-(If an entry for category="anomaly_scan", subject="last_run" already exists, use operation: "update" with memoryId instead.)
+The autonomous loop should store the last scan timestamp in agentMemory for reference.
 
 ---
 
@@ -305,5 +281,5 @@ agentMemory(
 1. **Never block legitimate transactions** — if uncertain, flag for review, don't prevent recording
 2. **Context matters** — a $10,000 charge is normal for some vendors, suspicious for others
 3. **Learn from corrections** — if human marks a flagged transaction as OK, update memory to avoid re-flagging
-4. **Document everything** — every anomaly flagged gets logged in agentLog
+4. **Document everything** — every anomaly flagged is tracked in the review queue
 5. **Escalate CRITICAL immediately** — don't batch critical anomalies for later

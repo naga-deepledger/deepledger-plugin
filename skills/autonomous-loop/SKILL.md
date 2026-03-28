@@ -19,8 +19,7 @@ Every transaction MUST be backed by a source document before recording.
 Acceptable sources: documents table (fetchDocuments), bank feed transactions
 (qbCategorizeBankFeed), uploaded receipts/invoices, email attachments, Google
 Drive files, shared drive documents, CSV/Excel uploads. If no source document
-exists for a transaction, escalate via contactHuman requesting the supporting
-document. Never record undocumented transactions — this is non-negotiable for
+exists for a transaction, skip it and move on to the next task. Never record undocumented transactions — this is non-negotiable for
 audit-ready books.
 
 ## Core Loop: CHECK → ANALYZE → ACT → ESCALATE → LOG → LEARN → REPORT
@@ -39,31 +38,24 @@ audit-ready books.
    → If CDC returns hasMore=true, narrow changedSince window and re-poll
 
 2. Fetch all pending AI tasks:
-   → Use fetchAiTasks(status: "scheduled" OR "queued")
+   → Use fetchWorkQueue(source: "tasks", status: "scheduled")
    → Sort by priority: urgent > high > normal > low
 
 3. Fetch unprocessed documents:
    → Use fetchDocuments() to find new uploads without linked tasks
    → These may be receipts, invoices, or statements needing recording
 
-4. Check for human replies:
-   → Use contactHuman(action: "check") to see if any pending questions were answered
-   → Process answered questions first — they unblock previous work
-
-5. Scan review queue:
+4. Scan review queue:
    → Check if previously flagged items were approved/rejected
    → Learn from approvals (reinforce pattern) and rejections (correct pattern)
 
-6. Triage bank feed:
+5. Triage bank feed:
    → Use qbCategorizeBankFeed(limit: 20) to analyze unprocessed Teller bank transactions
    → This returns each transaction with: confidence score, suggested category, recommended action
    → Three possible actions per transaction:
      a. action: "record" (confidence ≥80%) → Record directly with qbExpense / qbDeposit / qbTransfer
      b. action: "flag_for_review" (confidence 60-79%) → Call qbFlagForReview with suggestedCategory
-     c. action: "human_categorize" (confidence <60%) → Call qbFlagForReview without category OR contactHuman
-   → After triaging, notify the CPA:
-     notifyUser(type: "success", title: "Bank feed processed", body: "N transactions ready, M flagged for review", actionUrl: "/bank-feed")
-   → Log the run: agentLog(action: "bank_feed_triage", outcome: "X records, Y flagged, Z human")
+     c. action: "human_categorize" (confidence <60%) → Call qbFlagForReview without category
 ```
 
 ### Phase 2: ANALYZE (Understand Context)
@@ -103,17 +95,13 @@ action: "record" (confidence ≥80%):
      → type=income: qbDeposit(amount, date, description)
      → type=transfer: qbTransfer(fromAccount, toAccount, amount, date)
   3. Update agentMemory with vendor pattern (confidence +5 for confirmed)
-  4. agentLog(action: "recorded_bank_tx", outcome: "success")
 
 action: "flag_for_review" (confidence 60-79%):
   1. qbFlagForReview(description, amount, type, suggestedCategory, confidenceScore, tellerTransactionId)
-  2. agentLog(action: "flagged_bank_tx", outcome: "flagged", reason: "confidence below 80%")
 
 action: "human_categorize" (confidence <60%):
   1. If new vendor type: qbFlagForReview without suggestedCategory, reason: "New vendor pattern"
-  2. If genuinely ambiguous: contactHuman(action: "send", messageType: "clarification",
-       message: "New bank transaction from [vendor]: $[amount] on [date]. What category?",
-       options: ["Expense - Office Supplies", "Expense - Professional Services", "Other"])
+  2. If genuinely ambiguous: qbFlagForReview with reason "Human categorization needed"
 ```
 
 **Transaction Recording (from AI tasks or documents):**
@@ -123,7 +111,7 @@ action: "human_categorize" (confidence <60%):
    → Check documents table (fetchDocuments) for matching uploads
    → Check bank feed (qbCategorizeBankFeed) for matching bank transactions
    → If from AI task: verify task has linked document or sufficient detail
-   → If NO source document: escalate via contactHuman requesting document — SKIP this transaction
+   → If NO source document: SKIP this transaction
 2. Parse the transaction from source document or task description
 3. Infer: type, vendor/customer, amount, date, category
 4. Check agent memory for this vendor's usual category
@@ -132,7 +120,6 @@ action: "human_categorize" (confidence <60%):
 7. If confident (≥80%) and document-backed:
    → Execute: qbBill / qbExpense / qbInvoice / qbTransfer / qbEstimate / etc.
    → Attach source document to QB transaction via qbGetUploadUrl
-   → Log success with confidence score
 8. If moderate confidence (60-79%):
    → Execute but flag for review queue via qbFlagForReview
    → Attach source document
@@ -162,9 +149,7 @@ Deductions:
 
 Score >= 80% → execute autonomously
 Score 60-79% → execute but flag for review queue
-Score < 60%  → escalate to human via contactHuman
-
-Log the confidence score in agentLog for every transaction.
+Score < 60%  → skip this transaction, move to next
 ```
 
 **Financial Analysis:**
@@ -209,13 +194,13 @@ Log the confidence score in agentLog for every transaction.
 6. After recording: attach document to QB transaction via qbGetUploadUrl
 
 7. Low-confidence extraction (<60%):
-   → Escalate via contactHuman with document context
+   → Flag for review in review_queue
    → Include what you extracted and what you're unsure about
 ```
 
-### Phase 4: ESCALATE (Contact Human When Needed)
+### Phase 4: FLAG FOR REVIEW
 
-**CRITICAL: Never guess. Always escalate when:**
+**When to flag for review:**
 
 - Cannot determine vendor/customer (no match, multiple ambiguous matches)
 - Cannot determine category for a new vendor type
@@ -225,41 +210,13 @@ Log the confidence score in agentLog for every transaction.
 - Any legal/tax-sensitive decision (1099, sales tax jurisdiction, etc.)
 - Client has no prior history for this transaction pattern
 
-**How to escalate:**
+**How to flag:**
 
-```
-Use contactHuman tool:
-  → action: "send"
-  → subject: Clear, specific question
-  → context: What you know, what you need, why you're asking
-  → priority: "normal" for questions, "urgent" for blocking issues
+Add to review_queue via the portal — these items will be reviewed by the CPA in the next cycle.
 
-Example:
-  contactHuman(
-    action: "send",
-    subject: "New vendor 'TechServe Inc' — what expense category?",
-    context: "Received a $1,200 invoice from TechServe Inc dated 2026-03-15.
-              This vendor doesn't exist in QB yet. The description says 'IT consulting'.
-              Should I categorize as: (A) Professional Services, (B) Computer & IT, (C) Other?
-              Also, should I create this as a new vendor?",
-    priority: "normal"
-  )
-```
+### Phase 5: AUDIT TRAIL
 
-**After escalating: Move to next task. Don't wait. Come back next cycle.**
-
-### Phase 5: LOG (Audit Everything)
-
-```
-For EVERY action taken, log it:
-  agentLog(
-    action: "recorded_expense" | "created_invoice" | "escalated_to_human" | "flagged_for_review" | etc.,
-    outcome: "success" | "escalated" | "failed",
-    details: { taskId, transactionId, amount, vendor, reason }
-  )
-
-This creates the audit trail visible in the portal's Audit Log page.
-```
+The audit trail is maintained through the portal's Audit Log page, which automatically tracks all actions taken by the system.
 
 ### Phase 6: LEARN (Self-Improve)
 
@@ -278,7 +235,6 @@ After each successful action:
   2. If a human corrected a previous categorization:
      → Update the memory to reflect the correction
      → agentMemory(operation: "update", memoryId: "<id>", memory: "<corrected JSON>", confidence: 90)
-     → Log the learning: agentLog(action: "learned_correction", details: { from, to, reason })
 
   3. Track success rate mentally:
      → If you're escalating the same type of question repeatedly,
@@ -290,7 +246,7 @@ After each successful action:
 ```
 At the end of each loop cycle:
 
-1. Produce a brief summary (logged to agentLog):
+1. Produce a brief summary:
    - Tasks processed: X
    - Bank transactions categorized: Y (N recorded, M flagged)
    - Documents processed: Z
@@ -298,18 +254,8 @@ At the end of each loop cycle:
    - Errors encountered: N
    - New patterns learned: M
 
-2. Push a portal notification so the CPA sees the cycle result immediately:
-   notifyUser(
-     type: "success",  // or "warn" if there were errors
-     title: "Accounting cycle complete",
-     body: "Processed X transactions, recorded Y, flagged Z for review. M new patterns learned.",
-     actionLabel: "Review Queue",
-     actionUrl: "/review"
-   )
-
-3. If significant financial changes or anomalies found:
+2. If significant financial changes or anomalies found:
    → Run /health-check for affected clients
-   → notifyUser(type: "warn", title: "Financial anomaly detected", body: "...", actionUrl: "/reports")
 ```
 
 ## Self-Improvement Mechanisms
@@ -320,7 +266,7 @@ At the end of each loop cycle:
 - After 3 consistent categorizations for a vendor, treat it as confident (no more asking)
 
 ### Error Recovery
-- If a QB API call fails → log the error, skip the task, retry next cycle
+- If a QB API call fails → skip the task, retry next cycle
 - If a task fails 3 cycles in a row → escalate to human with full error context
 - Never retry immediately — always wait for next cycle
 
@@ -335,10 +281,10 @@ At the end of each loop cycle:
 1. **Read operations are free** — query QB as much as needed to build confidence
 2. **Write operations need verification** — always check master data + duplicates + source document
 3. **Document everything** — every transaction must be backed by a source document
-4. **Never fabricate data** — if you don't know, escalate via contactHuman
-5. **One task at a time** — complete or escalate before moving to next
+4. **Never fabricate data** — if you don't know, flag for review
+5. **One task at a time** — complete or move to next
 6. **Respect the hooks** — safety hooks validate every write operation
-7. **Time-box yourself** — if a single task takes > 5 minutes of analysis, escalate it
-8. **Be transparent** — every action gets logged, every decision gets a reason
+7. **Time-box yourself** — if a single task takes > 5 minutes of analysis, move to next
+8. **Be transparent** — every decision has a reason
 9. **Attach documents** — after recording, attach the source document to the QB transaction
 10. **Audit-ready always** — every entry must withstand CPA review and audit scrutiny

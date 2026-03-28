@@ -18,14 +18,12 @@ Steps:
    - customerId, txnDate, expirationDate (default 30 days)
    - lines: [{amount, description, itemId/quantity/unitPrice}]
    - Optional: billEmail, customerMemo, salesTermId
-6. Log action via agentLog
-7. Report success with estimate ID
+6. Report success with estimate ID
 
-If customer match is ambiguous or amount is missing, escalate via contactHuman.
+If customer match is ambiguous or amount is missing, flag for review.
 
 **Status tracking:** Estimates support status: Pending, Accepted, Closed,
 Rejected. Update via qbEstimate with estimateId and txnStatus.
 
 **Conversion:** When an estimate is accepted, automatically convert it to an
 invoice by creating the invoice with matching line items via qbInvoice.
-Log the conversion via agentLog.

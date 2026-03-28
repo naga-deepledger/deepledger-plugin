@@ -16,7 +16,7 @@ Steps:
 4. Check for duplicate POs via qbFetchTransactions
 5. If all data is clear, execute immediately via qbPurchaseOrder:
    - vendorId, txnDate, lines, dueDate (if mentioned)
-6. Log action via agentLog and report success
+6. Report success
 
 **Note:** The QBO API fully supports Purchase Orders (full CRUD). If the
 MCP server exposes a qbPurchaseOrder tool, use it directly. If not, inform

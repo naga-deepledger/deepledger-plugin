@@ -59,7 +59,7 @@ Present as a structured report:
    - Suggested correction
 5. **Proposed Journal Entries**: If adjustments are needed (depreciation,
    accruals, reclassifications), record them autonomously when document-backed
-   and confident (≥80%). Escalate via contactHuman for entries that require
+   and confident (≥80%). Flag for review for entries that require
    judgment (materiality thresholds, timing decisions, unusual adjustments)
 6. **Reminder**: Items that can't be verified programmatically (bank reconciliation,
    physical inventory counts, etc.)

@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "A write operation is about to execute. Verify: (1) Was qbMasterData called first to verify accounts/vendors/customers exist? (2) Was qbFetchTransactions called to check for duplicates? (3) Is this transaction backed by a source document (documents table, bank feed, user description with vendor+amount+date+purpose, or approved review queue item)? If checks (1) and (2) fail, return 'block' with the reason. If check (3) fails, return 'block: no source document — escalate via contactHuman'. If all pass, return 'approve'. Note: User confirmation is NOT required — autonomous execution is authorized when document-backed and duplicate-checked.",
+            "prompt": "A write operation is about to execute. Verify: (1) Was qbMasterData called first to verify accounts/vendors/customers exist? (2) Was qbFetchTransactions called to check for duplicates? (3) Is this transaction backed by a source document (documents table, bank feed, user description with vendor+amount+date+purpose, or approved review queue item)? If checks (1) and (2) fail, return 'block' with the reason. If check (3) fails, return 'block: no source document — flag for review'. If all pass, return 'approve'. Note: User confirmation is NOT required — autonomous execution is authorized when document-backed and duplicate-checked.",
             "timeout": 15
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "A void/delete operation is about to execute. This is destructive and irreversible. Verify: (1) The transaction ID is specific and correct. (2) A reason for voiding is documented. (3) This was either explicitly requested by a human via contactHuman reply or chat, OR is correcting a confirmed duplicate/error. If the void is autonomous correction of a verified error, return 'approve'. If not clearly justified, return 'block — escalate via contactHuman for void confirmation'.",
+            "prompt": "A void/delete operation is about to execute. This is destructive and irreversible. Verify: (1) The transaction ID is specific and correct. (2) A reason for voiding is documented. (3) This was either explicitly requested by a human via chat, OR is correcting a confirmed duplicate/error. If the void is autonomous correction of a verified error, return 'approve'. If not clearly justified, return 'block — flag for review for void confirmation'.",
             "timeout": 10
           }
         ]

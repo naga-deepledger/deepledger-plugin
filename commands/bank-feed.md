@@ -32,9 +32,9 @@ For **`flag_for_review`** actions:
 - These appear in the portal Review Queue for CPA approval
 
 For **`human_categorize`** actions:
-- Call `contactHuman` with `message_type: "clarification"` explaining what you know and what you need
-- Group multiple low-confidence transactions into one message if possible (batch questions)
-- Wait for reply before recording
+- Call `qbFlagForReview` explaining what you know and what you need
+- Group multiple low-confidence transactions into one review_queue entry if possible
+- These will be reviewed in the next portal cycle
 
 ### 4. Update Memory
 
@@ -44,25 +44,11 @@ After each successfully recorded transaction, call `agentMemory` (operation: wri
 - memory: "Vendor X → Account Y (expense type Z) — recorded from bank feed"
 - confidence: based on match strength
 
-### 5. Log & Notify
-
-Always call `agentLog` with a summary:
-- action: "Bank feed triage — X recorded, Y flagged, Z need human input"
-- outcome: counts breakdown
-- logLevel: "success" if recorded > 0, "warn" if most needed human input
-
-If significant work was done (any transactions recorded), call `notifyUser`:
-- type: "success"
-- title: "Bank Feed Processed"
-- body: "Processed N transactions: X auto-recorded to QuickBooks, Y flagged for review, Z need your input"
-- actionLabel: "View Review Queue" (if Y > 0) or "View Bank Feed"
-- actionUrl: "/review" or "/bank-feed"
-
 ## Safety Rules
 
 - ALWAYS check for duplicates before recording (qbFetchTransactions with date + amount + vendor)
 - NEVER record a transaction if qbMasterData lookup fails
-- If QB is not connected, use `contactHuman` to notify CPA and stop
+- If QB is not connected, flag for review and stop
 
 ## Usage
 

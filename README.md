@@ -183,11 +183,10 @@ workflow:
 - Master data is verified before any transaction is recorded
 - Duplicate checks run automatically before every write
 - Confidence scoring determines action: ≥80% = execute, 60-79% = execute + flag
-  for review, <60% = escalate to human via contactHuman
-- Void/delete operations require human confirmation via contactHuman
+  for review, <60% = flag for review
+- Void/delete operations require human confirmation via review_queue
 - Purchases over $5,000 trigger escalation for asset-vs-expense decision
 - Source documents are attached to QB transactions after recording
-- Every action is logged via agentLog for complete audit trail
 
 ## Requirements
 

@@ -83,7 +83,7 @@ For each systematic error found:
      confidence: 85
    )
    ```
-3. Log each self-correction via agentLog
+3. Record each self-correction in agentMemory
 
 **Phase 5: Store Audit Results**
 

@@ -69,7 +69,7 @@ Once a baseline exists, anomaly detection uses these rules:
 
 | Condition | Risk Level | Action |
 |-----------|-----------|--------|
-| amount > mean + 3×stddev | HIGH (60+) | Flag for review + contactHuman if >$5K |
+| amount > mean + 3×stddev | HIGH (60+) | Flag for review |
 | amount > mean + 2×stddev | MEDIUM (40-59) | Flag for review |
 | amount > p95 × 1.5 | MEDIUM (40-59) | Flag for review |
 | amount > max × 2 | HIGH (60+) | Flag for review |

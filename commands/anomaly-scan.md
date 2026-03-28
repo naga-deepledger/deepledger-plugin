@@ -29,10 +29,9 @@ Steps:
    - Large manual journal entries (>$5,000, no document)
    - Split transaction patterns (multiple charges just below a threshold)
 5. Score each anomaly and prioritize (Critical/High/Medium/Low)
-6. For CRITICAL anomalies: use contactHuman to alert immediately
+6. For CRITICAL anomalies: flag in review_queue with high priority
 7. For HIGH/MEDIUM: add to review_queue
-8. Log every finding via agentLog
-9. Update agentMemory with new vendor baselines discovered
-10. Output the full Anomaly Detection Report
+8. Update agentMemory with new vendor baselines discovered
+9. Output the full Anomaly Detection Report
 
 Present findings clearly with: transaction description, amount, date, vendor, reason flagged, and what normal looks like for comparison.

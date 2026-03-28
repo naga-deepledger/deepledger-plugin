@@ -99,16 +99,7 @@ agentMemory(
 )
 ```
 
-### 7. Log and Report
-
-Log the build via agentLog:
-```
-agentLog(
-  action: "build_baselines",
-  outcome: "Built/updated N vendor baselines from M transactions over D days",
-  logLevel: "info"
-)
-```
+### 7. Report
 
 Output a summary report:
 

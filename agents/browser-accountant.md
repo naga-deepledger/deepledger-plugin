@@ -79,9 +79,7 @@ Before performing any action, verify the user is logged into QuickBooks Online:
 **Safety:**
 - Use `browser_snapshot` to verify the current state before making changes
 - Execute autonomously for standard operations (reconciliation, bank feed matching, etc.)
-- For destructive actions (deleting recurring transactions, etc.), escalate
-  via contactHuman for confirmation before proceeding
-- Log every browser action via agentLog for audit trail
+- For destructive actions (deleting recurring transactions, etc.), flag for review for confirmation before proceeding
 
 ## QBO Navigation Reference
 
