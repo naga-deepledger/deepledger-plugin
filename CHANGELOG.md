@@ -7,7 +7,8 @@
 
 ### Added — New Hooks
 - **`duplicate-result-guard`**: Verifies qbFetchTransactions returned ZERO matches before allowing writes. Prior hook only checked the call happened — this checks the result was clean. On violation: stops and shows potential duplicates to user.
-- **`transaction-type-guard`**: Catches the two most expensive mistakes — recording Expense when outstanding Bill exists (should be BillPayment) and recording Deposit when outstanding Invoice exists (should be ReceivePayment). On violation: shows outstanding items and asks to switch type.
+- **`expense-type-guard`**: Catches expense-side type errors — Expense when outstanding Bill exists (should be BillPayment), Deposit when outstanding Invoice exists (should be ReceivePayment).
+- **`income-type-guard`**: Catches income-side type errors — SalesReceipt when outstanding Invoice exists (should be ReceivePayment), Invoice when customer already paid (should be SalesReceipt), ReceivePayment when no Invoice exists (should be Deposit or SalesReceipt). Full AR cycle validation.
 - **`vendor-resolution-guard`**: Cross-references vendorId/customerId AND accountIds against qbMasterData results. Catches hallucinated IDs, copy-paste errors, and wrong-vendor selection.
 - **`amount-anomaly-guard`**: Checks transaction amount against learned vendor amount range (from bootstrap or history). Flags if 3x outside average or below 1/3 of minimum.
 - **`source-category-collision-guard`**: Blocks when source account (bank/CC) equals a line item account — a zero-net transaction that breaks reconciliation.
