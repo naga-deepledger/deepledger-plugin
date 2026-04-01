@@ -1,0 +1,13 @@
+{
+  "name": "deepledger",
+  "version": "1.3.0",
+  "description": "Autonomous AI bookkeeper — records transactions, processes bank feeds, generates financial reports, and self-improves through pattern learning. QuickBooks Online integration via MCP.",
+  "author": {
+    "name": "DeepLedger",
+    "url": "https://deepledger.ai"
+  },
+  "homepage": "https://deepledger.ai",
+  "repository": "https://github.com/naga-deepledger/deepledger-plugin",
+  "license": "MIT",
+  "keywords": ["quickbooks", "bookkeeping", "accounting", "finance", "ai-cfo"]
+}

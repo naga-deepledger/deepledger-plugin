@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "deepledger": {
+      "type": "http",
+      "url": "https://deepledger-mcp.onrender.com/mcp"
+    }
+  }
+}
