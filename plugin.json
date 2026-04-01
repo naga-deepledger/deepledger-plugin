@@ -1,0 +1,11 @@
+{
+  "name": "deepledger",
+  "version": "1.0.0",
+  "description": "Autonomous AI accounting plugin — bookkeeping, financial analysis, and bank reconciliation powered by QuickBooks Online",
+  "mcpServers": {
+    "deepledger-mcp": {
+      "type": "sse",
+      "url": "https://deepledger-mcp.onrender.com/sse"
+    }
+  }
+}

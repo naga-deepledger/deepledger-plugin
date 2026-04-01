@@ -1,0 +1,92 @@
+{
+  "hooks": [
+    {
+      "name": "write-safety-guard",
+      "description": "Validates that all QB write operations follow the safety protocol: master data lookup, duplicate check, and user confirmation",
+      "event": "before_tool_call",
+      "match": {
+        "tool_name_pattern": "^qb(Expense|Bill|BillPayment|Invoice|SalesReceipt|ReceivePayment|Deposit|JournalEntry|Transfer|RefundReceipt|Credit|Estimate|PurchaseOrder|RecurringTransaction)$"
+      },
+      "rules": [
+        {
+          "id": "require-master-data-lookup",
+          "description": "qbMasterData must be called before any write to ensure valid vendor/customer and account IDs",
+          "require_prior_tool_call": "qbMasterData",
+          "error_message": "SAFETY VIOLATION: You must call qbMasterData to look up valid vendor/customer and account IDs before creating a transaction. This prevents invalid references and broken audit trails."
+        },
+        {
+          "id": "require-duplicate-check",
+          "description": "qbFetchTransactions must be called before any write to check for duplicates",
+          "require_prior_tool_call": "qbFetchTransactions",
+          "error_message": "SAFETY VIOLATION: You must call qbFetchTransactions to check for duplicate transactions before creating a new one. Duplicate transactions are costly to fix and break reconciliation."
+        }
+      ]
+    },
+    {
+      "name": "void-transaction-guard",
+      "description": "Extra caution before voiding or deleting any transaction",
+      "event": "before_tool_call",
+      "match": {
+        "tool_name_pattern": "^qbVoidTransaction$"
+      },
+      "rules": [
+        {
+          "id": "require-fetch-before-void",
+          "description": "Must fetch the transaction details before voiding to confirm the right transaction",
+          "require_prior_tool_call": "qbFetchTransactions",
+          "error_message": "SAFETY VIOLATION: You must fetch and verify the transaction details via qbFetchTransactions before voiding it. Voiding the wrong transaction loses the audit trail permanently."
+        }
+      ]
+    },
+    {
+      "name": "batch-safety-guard",
+      "description": "Validates batch operations follow safety protocol",
+      "event": "before_tool_call",
+      "match": {
+        "tool_name_pattern": "^qbBatch$"
+      },
+      "rules": [
+        {
+          "id": "require-master-data-for-batch",
+          "description": "qbMasterData must be called before batch operations",
+          "require_prior_tool_call": "qbMasterData",
+          "error_message": "SAFETY VIOLATION: You must call qbMasterData to verify vendor/customer and account IDs before running a batch operation. Batch errors affect multiple transactions at once."
+        }
+      ]
+    },
+    {
+      "name": "bank-feed-flag-quality",
+      "description": "Ensures flagged items include reasoning for the CPA",
+      "event": "before_tool_call",
+      "match": {
+        "tool_name_pattern": "^bankFeed$"
+      },
+      "rules": [
+        {
+          "id": "require-reasoning-for-flag",
+          "description": "When flagging for review, aiReasoning must be provided so the CPA has context",
+          "check_parameter": {
+            "if_param_equals": { "action": "flag" },
+            "require_param": "aiReasoning",
+            "error_message": "QUALITY CHECK: When flagging a transaction for CPA review, you must include aiReasoning explaining WHY you are uncertain. Without context, the CPA cannot review efficiently."
+          }
+        }
+      ]
+    },
+    {
+      "name": "journal-entry-balance-check",
+      "description": "Reminds agent that journal entry debits must equal credits",
+      "event": "before_tool_call",
+      "match": {
+        "tool_name_pattern": "^qbJournalEntry$"
+      },
+      "rules": [
+        {
+          "id": "debit-credit-balance",
+          "description": "Journal entry lines must balance",
+          "advisory_message": "REMINDER: Verify that total debits equal total credits in this journal entry. Unbalanced entries will be rejected by QuickBooks and may indicate a categorization error."
+        }
+      ]
+    }
+  ]
+}
