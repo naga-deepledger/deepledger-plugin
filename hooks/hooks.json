@@ -63,6 +63,16 @@
           "error_message": "WRONG TYPE: This vendor has outstanding Bills in QuickBooks. Recording a separate Expense will double-count when the Bill is later paid. You MUST use qbBillPayment to pay the existing Bill instead. Show the outstanding Bill(s) to the user: amount, date, due date. Ask: 'This vendor has an outstanding bill for $X. Should I record this as a Bill Payment against that bill instead?'"
         },
         {
+          "id": "check-bill-language-before-expense",
+          "description": "Before recording an Expense, check if the user's request uses language indicating a bill or payable: 'received a bill', 'received an invoice from vendor', 'bill from', 'net 30', 'net 15', 'due in', 'pay later', 'on account', 'on credit'. If so, the user wants to record a Bill (money owed later), not an Expense (money paid now). Expense = already paid from bank/CC. Bill = owe the vendor, will pay later.",
+          "validate_prior_result": {
+            "tool": "user_input_context",
+            "condition": "no_bill_or_payable_language_in_request",
+            "on_violation": "STOP_AND_ASK"
+          },
+          "error_message": "WRONG TYPE: The user's request suggests this is a bill to be paid later, but you are recording an Expense (which means already paid). Expense = money left the bank account NOW. Bill = you OWE the vendor and will pay later. Use qbBill to record the payable, then qbBillPayment when it's actually paid. Ask: 'It sounds like this hasn't been paid yet — should I record it as a Bill (owe now, pay later) instead of an Expense (already paid)?'"
+        },
+        {
           "id": "check-outstanding-invoices-before-deposit",
           "description": "Before recording a Deposit, check if qbFetchTransactions was called with type=Invoice and outstandingOnly=true for this customer. If outstanding invoices exist for this customer, you should use qbReceivePayment instead of qbDeposit — depositing directly leaves the invoice unpaid in the system.",
           "validate_prior_result": {
@@ -71,6 +81,16 @@
             "on_violation": "STOP_AND_ASK"
           },
           "error_message": "WRONG TYPE: This customer has outstanding Invoices in QuickBooks. Recording a Deposit will leave those invoices showing as unpaid, creating a mismatch in AR. You MUST use qbReceivePayment to apply this against the existing Invoice instead. Show the outstanding Invoice(s) to the user: amount, date, due date. Ask: 'This customer has an outstanding invoice for $X. Should I record this as a Receive Payment against that invoice instead?'"
+        },
+        {
+          "id": "check-customer-context-before-deposit",
+          "description": "Before recording a Deposit, check if the user's request mentions a customer name, customer payment, or any context involving a specific customer. qbDeposit is for generic bank deposits (multiple payment sources, owner contributions, refunds received, interest income). If a specific customer paid for a specific product or service, use qbSalesReceipt instead — it links the income to the customer for accurate SalesByCustomer, CustomerIncome, and revenue reporting. A Deposit has NO customer linkage, so customer-specific income disappears from all customer reports.",
+          "validate_prior_result": {
+            "tool": "user_input_context",
+            "condition": "no_specific_customer_referenced_in_request",
+            "on_violation": "STOP_AND_ASK"
+          },
+          "error_message": "WRONG TYPE: The user mentioned a specific customer, but you are recording a generic Deposit. Deposits have NO customer linkage — this income will not appear in SalesByCustomer or CustomerIncome reports, and the customer's payment history will be incomplete. You MUST use qbSalesReceipt instead (for immediate customer payments without a prior invoice) or qbReceivePayment (if an invoice exists). Ask: 'This payment is from a specific customer. Should I record it as a Sales Receipt so it tracks against their account, or is this truly a general deposit from multiple sources?'"
         }
       ]
     },
