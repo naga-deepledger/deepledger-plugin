@@ -72,6 +72,35 @@ Flag for CPA review (`bankFeed(action="flag")`) when:
 
 Always include specific `aiReasoning`: "New vendor not in memory" or "Amount $12,500 is 3x the usual $4,200 for this vendor"
 
+## Corrections & Reversals
+
+When a transaction was recorded incorrectly:
+
+- **Same period, simple error** → `qbVoidTransaction` the incorrect entry, then re-record correctly
+- **Prior period, books closed** → Create a reversing `qbJournalEntry` in the current period, then record the correct entry
+- **Partial correction** → Reversing JE for just the incorrect portion
+- Always include memo: "Correction of [original ref]" for audit trail
+
+## Batch Operations
+
+Use `qbBatch` when recording 3+ transactions of the same type:
+
+1. `qbMasterData` — lookup all IDs needed for the batch
+2. `qbFetchTransactions` — single duplicate check covering the full date range
+3. Build batch payload — group by transaction type (cannot mix types in one batch)
+4. Confirm with user — show summary table
+5. Submit batch — check each item's success/failure in the response
+6. Retry failed items individually
+
+## Recurring Transactions
+
+Use `qbRecurringTransaction` for predictable, repeating entries:
+
+- Monthly rent, utilities, subscriptions → `recurType: "Automated"`
+- Variable-amount items → `recurType: "Reminder"` (notifies but doesn't auto-post)
+- Always set a start date; set end date for fixed-term obligations
+- Review recurring transaction list during month-end close to catch any that failed
+
 ## Document Handling
 
 When documents (receipts, invoices, statements) are available:

@@ -67,6 +67,55 @@ Note: entityType for expenses = "Purchase" (not "Expense")
 agentMemory → write/upvote vendor-to-account mapping
 ```
 
+## Workflow: Batch Recording
+
+Use `qbBatch` when recording 3+ transactions of the same type (e.g., multiple expenses from one bank feed pull).
+
+### When to Batch
+- 3+ transactions of the same QB type (all Expenses, all Bills, etc.)
+- All transactions share the same source account (e.g., same credit card)
+- Mixed types cannot be batched — group by type first
+
+### Steps
+1. `qbMasterData` — lookup all vendor/customer/account IDs needed for the batch
+2. `qbFetchTransactions` — run a single duplicate check covering the date range of all items
+3. Build the batch payload — array of transactions, each with its own vendor, amount, date, lines
+4. Confirm with user — show a summary table: "Recording X transactions totaling $Y"
+5. `qbBatch` — submit the batch
+6. Verify response — check each item for success/failure
+7. For failed items in the batch, retry individually with the standard single-record workflow
+8. `agentMemory` — upvote all vendor mappings used in the batch
+
+### Example Batch Payload Structure
+```
+qbBatch(
+  operations: [
+    { type: "Expense", vendorId: "123", accountId: "456", amount: 50.00, date: "2026-03-15", lines: [...] },
+    { type: "Expense", vendorId: "789", accountId: "456", amount: 75.00, date: "2026-03-16", lines: [...] },
+    { type: "Expense", vendorId: "321", accountId: "456", amount: 120.00, date: "2026-03-17", lines: [...] }
+  ]
+)
+```
+
+## Workflow: Corrections & Reversals
+
+When a transaction was recorded incorrectly:
+
+### Void and Re-record (preferred for recent errors)
+1. `qbFetchTransactions` — find the incorrect transaction
+2. `qbVoidTransaction` — void it (preserves audit trail, unlike delete)
+3. Record the correct transaction using the standard workflow
+
+### Reversing Journal Entry (preferred for prior-period corrections)
+1. Create a JE that reverses the original entry (swap debits/credits)
+2. Record the correct entry in the current period
+3. Add memo: "Correction of [original transaction ref]"
+
+### When to Use Which
+- **Same period, simple error** (wrong amount, wrong vendor) → Void and re-record
+- **Prior period, already closed** → Reversing JE in current period
+- **Partial correction** (one line wrong on multi-line transaction) → Reversing JE for the incorrect portion only
+
 ## Workflow: Bank Feed Processing
 
 Follow the `getGuide(guideType="reconciliation")` workflow:
