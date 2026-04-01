@@ -46,10 +46,10 @@
 
     {
       "name": "expense-type-guard",
-      "description": "Validates correct transaction type on the expense/AP side. Catches: recording an Expense when an outstanding Bill exists (should be BillPayment), and recording a Deposit when an outstanding Invoice exists (should be ReceivePayment).",
+      "description": "Validates correct transaction type on the expense/AP side. Expense = money already left the bank. Bill = money owed to vendor, pay later.",
       "event": "before_tool_call",
       "match": {
-        "tool_name_pattern": "^qb(Expense|Deposit)$"
+        "tool_name_pattern": "^qbExpense$"
       },
       "rules": [
         {
@@ -71,33 +71,54 @@
             "on_violation": "STOP_AND_ASK"
           },
           "error_message": "WRONG TYPE: The user's request suggests this is a bill to be paid later, but you are recording an Expense (which means already paid). Expense = money left the bank account NOW. Bill = you OWE the vendor and will pay later. Use qbBill to record the payable, then qbBillPayment when it's actually paid. Ask: 'It sounds like this hasn't been paid yet — should I record it as a Bill (owe now, pay later) instead of an Expense (already paid)?'"
-        },
+        }
+      ]
+    },
+
+    {
+      "name": "deposit-type-guard",
+      "description": "Validates correct usage of qbDeposit. In QuickBooks, Deposit means 'move money INTO a bank account.' It has two valid modes: (A) batch multiple ReceivePayments/SalesReceipts from Undeposited Funds into one bank deposit, or (B) record non-customer income directly (interest, refunds, owner contributions, grants). Deposit does NOT close invoices, does NOT link to customers, and should NOT be used for single customer payments.",
+      "event": "before_tool_call",
+      "match": {
+        "tool_name_pattern": "^qbDeposit$"
+      },
+      "rules": [
         {
           "id": "check-outstanding-invoices-before-deposit",
-          "description": "Before recording a Deposit, check if qbFetchTransactions was called with type=Invoice and outstandingOnly=true for this customer. If outstanding invoices exist for this customer, you should use qbReceivePayment instead of qbDeposit — depositing directly leaves the invoice unpaid in the system.",
+          "description": "Before recording a Deposit, check if the context involves a customer who has outstanding Invoices. A Deposit CANNOT close an Invoice — it does not touch Accounts Receivable. If a customer is paying against an Invoice, you MUST use qbReceivePayment first (which closes the Invoice and moves money to Undeposited Funds), then batch that ReceivePayment into a Deposit later.",
           "validate_prior_result": {
             "tool": "qbFetchTransactions",
-            "condition": "no_outstanding_invoices_for_this_customer",
+            "condition": "no_outstanding_invoices_for_referenced_customer",
             "on_violation": "STOP_AND_ASK"
           },
-          "error_message": "WRONG TYPE: This customer has outstanding Invoices in QuickBooks. Recording a Deposit will leave those invoices showing as unpaid, creating a mismatch in AR. You MUST use qbReceivePayment to apply this against the existing Invoice instead. Show the outstanding Invoice(s) to the user: amount, date, due date. Ask: 'This customer has an outstanding invoice for $X. Should I record this as a Receive Payment against that invoice instead?'"
+          "error_message": "WRONG TYPE: This customer has outstanding Invoices, but qbDeposit CANNOT close an Invoice — it does not reduce Accounts Receivable. The Invoice will remain 'unpaid' even though money is in the bank. Correct flow: (1) qbReceivePayment to close the Invoice (money goes to Undeposited Funds), then (2) qbDeposit to move from Undeposited Funds to the bank account. Ask: 'This customer has outstanding invoice(s). Should I record a Receive Payment first to close the invoice, then include it in a bank deposit?'"
         },
         {
-          "id": "check-customer-context-before-deposit",
-          "description": "Before recording a Deposit, check if the user's request mentions a customer name, customer payment, or any context involving a specific customer. qbDeposit is for generic bank deposits (multiple payment sources, owner contributions, refunds received, interest income). If a specific customer paid for a specific product or service, use qbSalesReceipt instead — it links the income to the customer for accurate SalesByCustomer, CustomerIncome, and revenue reporting. A Deposit has NO customer linkage, so customer-specific income disappears from all customer reports.",
+          "id": "check-single-customer-sale-before-deposit",
+          "description": "Before recording a Deposit, check if the context describes a single customer paying for a product or service (NOT paying an existing invoice). If so, use qbSalesReceipt instead — it links the income to the customer and goes to Undeposited Funds, then gets batched into a Deposit later. A direct Deposit has NO customer linkage, so the income disappears from SalesByCustomer and CustomerIncome reports. EXCEPTION: If this Deposit is batching multiple existing ReceivePayments or SalesReceipts from Undeposited Funds (LinkedTxn mode), that is correct — proceed.",
           "validate_prior_result": {
             "tool": "user_input_context",
-            "condition": "no_specific_customer_referenced_in_request",
+            "condition": "not_a_single_customer_sale_OR_is_batching_from_undeposited_funds",
             "on_violation": "STOP_AND_ASK"
           },
-          "error_message": "WRONG TYPE: The user mentioned a specific customer, but you are recording a generic Deposit. Deposits have NO customer linkage — this income will not appear in SalesByCustomer or CustomerIncome reports, and the customer's payment history will be incomplete. You MUST use qbSalesReceipt instead (for immediate customer payments without a prior invoice) or qbReceivePayment (if an invoice exists). Ask: 'This payment is from a specific customer. Should I record it as a Sales Receipt so it tracks against their account, or is this truly a general deposit from multiple sources?'"
+          "error_message": "WRONG TYPE: This appears to be a single customer sale, but you are recording a Deposit. A direct Deposit has NO customer linkage — this income will not appear in SalesByCustomer or CustomerIncome reports. Correct flow: (1) qbSalesReceipt to record the sale (links to customer, money goes to Undeposited Funds), then (2) qbDeposit later to batch it into the bank. EXCEPTION: If you are batching existing payments from Undeposited Funds via LinkedTxn, Deposit IS correct. Ask: 'Is this a customer sale? I should record it as a Sales Receipt first so it tracks against their account, then include it in a bank deposit later.'"
+        },
+        {
+          "id": "validate-deposit-mode",
+          "description": "Verify the Deposit is using one of the two valid modes. Mode A (batching): line items use LinkedTxn referencing existing ReceivePayments or SalesReceipts in Undeposited Funds — this is the primary purpose of Deposit. Mode B (direct): line items use DepositLineDetail with an account that is NOT an Accounts Receivable or customer-specific income account — valid for interest income, owner contributions, refunds received, insurance proceeds, grants, or other non-customer income. If the line items use DepositLineDetail with a customer-facing income account (like 'Consulting Income' or 'Service Revenue'), this is likely a customer sale that should go through SalesReceipt first.",
+          "validate_parameter_logic": {
+            "check": "lines use LinkedTxn (batching from Undeposited Funds) OR lines use DepositLineDetail with non-customer accounts (Interest Income, Owner Equity, Other Income, etc.)",
+            "valid_direct_deposit_accounts": ["Interest Income", "Other Income", "Owner's Equity", "Owner's Investment", "Insurance Proceeds", "Refunds Received", "Miscellaneous Income"],
+            "suspicious_direct_deposit_accounts": ["Consulting Income", "Service Revenue", "Sales", "Product Income", "Professional Fees"]
+          },
+          "error_message": "DEPOSIT MODE CHECK: This Deposit uses a direct income account that typically represents customer sales (e.g., Consulting Income, Service Revenue). Customer-specific income should go through qbSalesReceipt (which links to a customer) rather than a direct Deposit line (which has no customer linkage). Valid direct deposit accounts: Interest Income, Owner's Equity/Investment, Other Income, Insurance Proceeds, Refunds Received. Ask: 'This income account is usually tied to a specific customer. Should I record it as a Sales Receipt instead, or is this truly non-customer income?'"
         }
       ]
     },
 
     {
       "name": "income-type-guard",
-      "description": "Validates correct transaction type on the income/AR side. Catches: recording a SalesReceipt when an outstanding Invoice exists (should be ReceivePayment), recording an Invoice when the customer already paid (should be SalesReceipt), and recording a ReceivePayment when no outstanding Invoice exists (should be Deposit or SalesReceipt).",
+      "description": "Validates correct transaction type on the income/AR side. The QuickBooks income flow is: Invoice (money owed) → ReceivePayment (invoice closed, money to Undeposited Funds) → Deposit (money to bank). OR: SalesReceipt (immediate sale, money to Undeposited Funds) → Deposit (money to bank). These hooks ensure the agent picks the right step in the flow.",
       "event": "before_tool_call",
       "match": {
         "tool_name_pattern": "^qb(SalesReceipt|Invoice|ReceivePayment)$"
@@ -105,33 +126,33 @@
       "rules": [
         {
           "id": "check-outstanding-invoices-before-sales-receipt",
-          "description": "Before recording a SalesReceipt, check if qbFetchTransactions was called with type=Invoice and outstandingOnly=true for this customer. If outstanding invoices exist for this customer, this payment should be applied against the existing invoice via qbReceivePayment — recording a SalesReceipt ignores the open invoice, leaving it unpaid in AR and double-counting the income.",
+          "description": "Before recording a SalesReceipt, check if qbFetchTransactions was called with type=Invoice and outstandingOnly=true for this customer. If outstanding invoices exist, this payment should be applied against the existing invoice via qbReceivePayment. Recording a SalesReceipt when an Invoice exists: (1) double-counts income (Invoice already recognized it), (2) leaves the Invoice 'unpaid' in AR, (3) creates a reconciliation mess. SalesReceipt is ONLY for sales with no prior Invoice.",
           "validate_prior_result": {
             "tool": "qbFetchTransactions",
             "condition": "no_outstanding_invoices_for_this_customer",
             "on_violation": "STOP_AND_ASK"
           },
-          "error_message": "WRONG TYPE: This customer has outstanding Invoices in QuickBooks. Recording a SalesReceipt will double-count income and leave the invoice showing as unpaid in AR. You MUST use qbReceivePayment to apply this payment against the existing Invoice instead. Show the outstanding Invoice(s) to the user: invoice #, amount, date, due date. Ask: 'Customer has an outstanding invoice (#INV) for $X. Should I record this as a Receive Payment against that invoice instead?'"
+          "error_message": "DOUBLE-COUNT RISK: This customer has outstanding Invoices. Recording a SalesReceipt will: (1) recognize income AGAIN (it was already recognized when the Invoice was created), (2) leave the Invoice showing as 'unpaid' in AR. You MUST use qbReceivePayment to close the existing Invoice instead. The ReceivePayment will go to Undeposited Funds, then get batched into a Deposit. Show the Invoice(s): #, amount, date, due date. Ask: 'Customer has invoice #INV for $X. Should I apply this as a Receive Payment against that invoice?'"
         },
         {
           "id": "check-payment-received-before-invoice",
-          "description": "Before recording an Invoice, check the context — if the user said the customer 'paid', 'sent payment', 'paid on the spot', or 'already paid', then an Invoice is wrong (invoices are for money OWED, not money received). Use qbSalesReceipt for immediate payment, or qbInvoice + qbReceivePayment if they want to track the AR cycle.",
+          "description": "Before recording an Invoice, check the context — if the user said the customer 'paid', 'sent payment', 'paid on the spot', 'already paid', 'received payment', or 'deposited', then an Invoice is wrong. Invoice = money OWED in the future (creates AR). If already paid, use qbSalesReceipt (immediate sale, no AR).",
           "validate_prior_result": {
             "tool": "user_input_context",
             "condition": "user_did_not_indicate_payment_already_received",
             "on_violation": "STOP_AND_ASK"
           },
-          "error_message": "WRONG TYPE: The context suggests the customer already paid, but you are creating an Invoice (which means 'money owed later'). If the customer paid on the spot, use qbSalesReceipt instead. If you want to track the receivable then immediately close it, create the Invoice then follow up with qbReceivePayment. Ask the user: 'Did the customer already pay? If yes, I should record this as a Sales Receipt (paid now) instead of an Invoice (owed later).'"
+          "error_message": "WRONG TYPE: The context suggests the customer already paid, but you are creating an Invoice (which means 'money owed in the future'). Invoice creates an Accounts Receivable balance — but the money is already received. Use qbSalesReceipt instead (sale + payment in one step, money goes to Undeposited Funds). Ask: 'Did the customer already pay? If yes, I should record this as a Sales Receipt (paid now) instead of an Invoice (owed later).'"
         },
         {
           "id": "check-invoice-exists-before-receive-payment",
-          "description": "Before recording a ReceivePayment, check if qbFetchTransactions was called with type=Invoice and outstandingOnly=true for this customer. ReceivePayment MUST be applied against an existing Invoice — if no outstanding invoice exists, this should be a Deposit (unlinked income) or SalesReceipt (new sale) instead.",
+          "description": "Before recording a ReceivePayment, verify that outstanding Invoice(s) exist for this customer via qbFetchTransactions. ReceivePayment MUST be applied against one or more existing Invoices — it reduces AR and moves money to Undeposited Funds. Without an Invoice to apply against, QB will reject the ReceivePayment or create an unapplied credit. If no Invoice exists: use qbSalesReceipt for a customer sale (creates income + payment), or qbDeposit for non-customer income.",
           "validate_prior_result": {
             "tool": "qbFetchTransactions",
             "condition": "outstanding_invoices_exist_for_this_customer",
             "on_violation": "STOP_AND_ASK"
           },
-          "error_message": "NO INVOICE FOUND: You are trying to record a ReceivePayment but there are no outstanding Invoices for this customer. ReceivePayment must be applied against an existing Invoice. If this is income without a prior invoice, use qbSalesReceipt (new sale, paid immediately) or qbDeposit (general bank deposit). Show what was found and ask: 'No outstanding invoices found for this customer. Should I record this as a Sales Receipt or Deposit instead?'"
+          "error_message": "NO INVOICE TO APPLY: You are recording a ReceivePayment, but no outstanding Invoices were found for this customer. ReceivePayment must close an existing Invoice — it cannot create income on its own (that happened when the Invoice was created). Without an Invoice: use qbSalesReceipt if this is a customer sale (creates income, links to customer, goes to Undeposited Funds), or qbDeposit if this is non-customer income (interest, refund, etc.). Ask: 'No outstanding invoices found for this customer. Is this a new sale (Sales Receipt) or a general bank deposit?'"
         }
       ]
     },

@@ -29,13 +29,29 @@ Never skip these steps. A duplicate transaction costs hours to fix. A missing ve
 
 ## Transaction Type Decision Tree
 
+### Expense Side (money going OUT)
 - Paid a vendor immediately (bank/card) → `qbExpense`
 - Received a vendor bill to pay later → `qbBill`
 - Paying an outstanding bill → `qbBillPayment`
-- Customer owes you money → `qbInvoice`
-- Customer paid immediately → `qbSalesReceipt`
-- Receiving payment on an invoice → `qbReceivePayment`
-- Money deposited into bank → `qbDeposit`
+
+### Income Side (money coming IN)
+- Customer owes you money (pay later) → `qbInvoice`
+- Customer paid on the spot (no prior invoice) → `qbSalesReceipt` → Undeposited Funds
+- Customer paying an outstanding invoice → `qbReceivePayment` → Undeposited Funds
+
+### Deposit (money hitting the BANK)
+- Batching multiple ReceivePayments/SalesReceipts from Undeposited Funds → `qbDeposit` (LinkedTxn mode)
+- Non-customer income: interest, refunds, owner contributions, grants → `qbDeposit` (direct mode)
+
+**Important: The Undeposited Funds Flow**
+```
+Invoice → ReceivePayment → Undeposited Funds ─┐
+                                                ├→ Deposit → Bank Account
+SalesReceipt → Undeposited Funds ──────────────┘
+```
+ReceivePayment and SalesReceipt do NOT put money in the bank — they put it in Undeposited Funds (the "desk drawer"). A Deposit is what actually moves money into the bank account, matching the lump-sum line on the bank statement.
+
+### Other
 - Adjusting/reclassifying entries → `qbJournalEntry`
 - Moving money between own accounts → `qbTransfer`
 - Issuing a refund → `qbRefundReceipt`

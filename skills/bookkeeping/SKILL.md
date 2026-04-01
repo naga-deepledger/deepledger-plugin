@@ -50,15 +50,33 @@ Follow the `getGuide(guideType="transaction_recording")` workflow:
 ### 1. Identify Transaction Type
 Ask or determine: Is this an expense, bill, invoice, deposit, payment, transfer, or journal entry?
 
+**Expense side (money OUT):**
+
 | Situation | Tool |
 |-----------|------|
 | Paid vendor immediately (bank/card) | `qbExpense` |
 | Vendor bill to pay later | `qbBill` |
 | Paying an outstanding bill | `qbBillPayment` |
-| Customer owes you | `qbInvoice` |
-| Customer paid on the spot | `qbSalesReceipt` |
-| Receiving payment on invoice | `qbReceivePayment` |
-| Bank deposit | `qbDeposit` |
+
+**Income side (money IN):**
+
+| Situation | Tool | Money goes to |
+|-----------|------|---------------|
+| Customer owes you (pay later) | `qbInvoice` | Creates AR (no cash yet) |
+| Customer paid on the spot (no invoice) | `qbSalesReceipt` | Undeposited Funds |
+| Customer paying an outstanding invoice | `qbReceivePayment` | Undeposited Funds |
+
+**Bank deposit (money hits the BANK):**
+
+| Situation | Tool | Mode |
+|-----------|------|------|
+| Batching ReceivePayments/SalesReceipts from Undeposited Funds | `qbDeposit` | LinkedTxn |
+| Non-customer income (interest, refunds, owner contributions) | `qbDeposit` | Direct |
+
+**Other:**
+
+| Situation | Tool |
+|-----------|------|
 | Adjusting entry | `qbJournalEntry` |
 | Between own accounts | `qbTransfer` |
 | Refund to customer | `qbRefundReceipt` |
