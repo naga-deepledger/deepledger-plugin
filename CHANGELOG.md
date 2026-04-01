@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.3.0] - 2026-04-01
+
+### Changed
+- **Hooks completely redesigned** — from 5 basic guards to 10 comprehensive validators that catch real failure modes
+
+### Added — New Hooks
+- **`duplicate-result-guard`**: Verifies qbFetchTransactions returned ZERO matches before allowing writes. Prior hook only checked the call happened — this checks the result was clean. On violation: stops and shows potential duplicates to user.
+- **`transaction-type-guard`**: Catches the two most expensive mistakes — recording Expense when outstanding Bill exists (should be BillPayment) and recording Deposit when outstanding Invoice exists (should be ReceivePayment). On violation: shows outstanding items and asks to switch type.
+- **`vendor-resolution-guard`**: Cross-references vendorId/customerId AND accountIds against qbMasterData results. Catches hallucinated IDs, copy-paste errors, and wrong-vendor selection.
+- **`amount-anomaly-guard`**: Checks transaction amount against learned vendor amount range (from bootstrap or history). Flags if 3x outside average or below 1/3 of minimum.
+- **`source-category-collision-guard`**: Blocks when source account (bank/CC) equals a line item account — a zero-net transaction that breaks reconciliation.
+
+### Upgraded — Existing Hooks
+- **`journal-entry-balance-enforcer`** (was `journal-entry-balance-check`): Upgraded from advisory reminder to hard block. Sums debits and credits to 2 decimal places and blocks if unequal.
+- **`void-transaction-guard`**: Added cross-reference check — transaction ID being voided must appear in the most recent qbFetchTransactions results.
+- **`batch-safety-guard`**: Added type homogeneity check (no mixed types in one batch) and duplicate check requirement.
+- **`bank-feed-flag-quality`**: Added aiReasoning quality enforcement — rejects generic flags ("not sure", "needs review") and requires specific context with examples.
+
 ## [1.2.0] - 2026-04-01
 
 ### Added

@@ -22,9 +22,152 @@
         }
       ]
     },
+
+    {
+      "name": "duplicate-result-guard",
+      "description": "Verifies that the duplicate check actually returned zero matches before allowing a write. The prior hook only checks that qbFetchTransactions was CALLED — this hook ensures the RESULT was clean.",
+      "event": "before_tool_call",
+      "match": {
+        "tool_name_pattern": "^qb(Expense|Bill|BillPayment|Invoice|SalesReceipt|ReceivePayment|Deposit|JournalEntry|Transfer|RefundReceipt|Credit)$"
+      },
+      "rules": [
+        {
+          "id": "verify-no-duplicates-found",
+          "description": "Review the result of the most recent qbFetchTransactions call. If it returned ANY transactions that match the vendor/customer, date (±3 days), and amount (±10%) of the transaction you are about to create, you MUST stop and show the potential duplicates to the user before proceeding.",
+          "validate_prior_result": {
+            "tool": "qbFetchTransactions",
+            "condition": "result_returned_zero_matches_for_current_transaction",
+            "on_violation": "STOP_AND_SHOW"
+          },
+          "error_message": "DUPLICATE RISK: Your duplicate check via qbFetchTransactions returned potential matches. You MUST show these matches to the user and get explicit confirmation that this is NOT a duplicate before proceeding. List each potential match with: date, amount, vendor/customer, and memo. Ask: 'I found existing transactions that may be duplicates. Should I proceed?'"
+        }
+      ]
+    },
+
+    {
+      "name": "transaction-type-guard",
+      "description": "Validates the agent picked the correct transaction type. Catches the two most expensive mistakes: recording an Expense when an outstanding Bill exists (should be BillPayment), and recording a Deposit when an outstanding Invoice exists (should be ReceivePayment).",
+      "event": "before_tool_call",
+      "match": {
+        "tool_name_pattern": "^qb(Expense|Deposit)$"
+      },
+      "rules": [
+        {
+          "id": "check-outstanding-bills-before-expense",
+          "description": "Before recording an Expense, check if qbFetchTransactions was called with type=Bill and outstandingOnly=true for this vendor. If outstanding bills exist for this vendor, you should use qbBillPayment instead of qbExpense — paying a bill directly as an expense creates a double-count when the bill is later paid.",
+          "validate_prior_result": {
+            "tool": "qbFetchTransactions",
+            "condition": "no_outstanding_bills_for_this_vendor",
+            "on_violation": "STOP_AND_ASK"
+          },
+          "error_message": "WRONG TYPE: This vendor has outstanding Bills in QuickBooks. Recording a separate Expense will double-count when the Bill is later paid. You MUST use qbBillPayment to pay the existing Bill instead. Show the outstanding Bill(s) to the user: amount, date, due date. Ask: 'This vendor has an outstanding bill for $X. Should I record this as a Bill Payment against that bill instead?'"
+        },
+        {
+          "id": "check-outstanding-invoices-before-deposit",
+          "description": "Before recording a Deposit, check if qbFetchTransactions was called with type=Invoice and outstandingOnly=true for this customer. If outstanding invoices exist for this customer, you should use qbReceivePayment instead of qbDeposit — depositing directly leaves the invoice unpaid in the system.",
+          "validate_prior_result": {
+            "tool": "qbFetchTransactions",
+            "condition": "no_outstanding_invoices_for_this_customer",
+            "on_violation": "STOP_AND_ASK"
+          },
+          "error_message": "WRONG TYPE: This customer has outstanding Invoices in QuickBooks. Recording a Deposit will leave those invoices showing as unpaid, creating a mismatch in AR. You MUST use qbReceivePayment to apply this against the existing Invoice instead. Show the outstanding Invoice(s) to the user: amount, date, due date. Ask: 'This customer has an outstanding invoice for $X. Should I record this as a Receive Payment against that invoice instead?'"
+        }
+      ]
+    },
+
+    {
+      "name": "vendor-resolution-guard",
+      "description": "Validates that the vendorId/customerId being used in the write call actually matches a result returned by the most recent qbMasterData call. Catches hallucinated IDs, copy-paste errors, and wrong-vendor selection.",
+      "event": "before_tool_call",
+      "match": {
+        "tool_name_pattern": "^qb(Expense|Bill|BillPayment|Invoice|SalesReceipt|ReceivePayment|Deposit|RefundReceipt|Credit|Estimate|PurchaseOrder|RecurringTransaction)$"
+      },
+      "rules": [
+        {
+          "id": "verify-vendor-id-from-master-data",
+          "description": "Cross-reference the vendorId or customerId parameter in this write call against the results returned by the most recent qbMasterData call. The ID must appear in those results. If it does not, the ID may be hallucinated, from a prior conversation, or from the wrong vendor/customer.",
+          "cross_reference_parameter": {
+            "current_param": "vendorId|customerId",
+            "must_match_result_from": "qbMasterData"
+          },
+          "error_message": "ID MISMATCH: The vendorId or customerId you are about to use was NOT returned by the most recent qbMasterData lookup. This could mean: (1) you are using an ID from a previous conversation, (2) you picked the wrong entity from the results, or (3) the ID is hallucinated. You MUST re-call qbMasterData to get the correct ID, then verify the entity name matches the user's intent before proceeding."
+        },
+        {
+          "id": "verify-account-id-from-master-data",
+          "description": "Cross-reference the account IDs used in line items against qbMasterData results. Every accountId in the transaction lines must be a real account returned by the lookup.",
+          "cross_reference_parameter": {
+            "current_param": "accountId (in lines)",
+            "must_match_result_from": "qbMasterData"
+          },
+          "error_message": "ACCOUNT ID MISMATCH: One or more account IDs in the transaction lines were NOT returned by qbMasterData. Re-verify all account IDs by calling qbMasterData(entityType='Account') before proceeding."
+        }
+      ]
+    },
+
+    {
+      "name": "amount-anomaly-guard",
+      "description": "Checks if the transaction amount is anomalous based on agent memory patterns. If the vendor has a known amount range (from bootstrap or prior recordings) and this amount is 3x outside that range, flag it.",
+      "event": "before_tool_call",
+      "match": {
+        "tool_name_pattern": "^qb(Expense|Bill|Invoice|SalesReceipt|Deposit)$"
+      },
+      "rules": [
+        {
+          "id": "check-amount-vs-memory-range",
+          "description": "If agentMemory was read for this vendor/customer and it contains an amountRange (min/max/avg), verify the current transaction amount is within a reasonable range. Flag if the amount is more than 3x the historical average OR less than 1/3 the historical minimum.",
+          "validate_against_memory": {
+            "memory_field": "amountRange",
+            "current_param": "amount (total or line sum)",
+            "threshold": "3x outside avg, or below 1/3 of min"
+          },
+          "error_message": "AMOUNT ANOMALY: This transaction amount is significantly outside the normal range for this vendor/customer. Historical range: $MIN - $MAX (avg $AVG). Current amount: $CURRENT. This could indicate: a pricing change, an error, or a different type of purchase. Ask the user to confirm the amount is correct before proceeding."
+        }
+      ]
+    },
+
+    {
+      "name": "journal-entry-balance-enforcer",
+      "description": "Enforces that journal entry debits equal credits. Upgraded from advisory to blocking — an unbalanced JE will be rejected by QuickBooks anyway, so catch it before the API call.",
+      "event": "before_tool_call",
+      "match": {
+        "tool_name_pattern": "^qbJournalEntry$"
+      },
+      "rules": [
+        {
+          "id": "debit-credit-balance-enforced",
+          "description": "Sum all debit amounts and all credit amounts in the journal entry lines. They MUST be exactly equal. Do not proceed if they are not. This is a hard block, not a reminder — QuickBooks will reject unbalanced entries, and an API error wastes a round trip.",
+          "validate_parameter_logic": {
+            "check": "sum(lines where PostingType=Debit) == sum(lines where PostingType=Credit)",
+            "precision": "round to 2 decimal places before comparing"
+          },
+          "error_message": "BALANCE ERROR: This journal entry does NOT balance. Total debits: $DEBITS. Total credits: $CREDITS. Difference: $DIFF. You MUST fix the line amounts so debits exactly equal credits before submitting. QuickBooks will reject this entry. Review each line and correct the amounts."
+        }
+      ]
+    },
+
+    {
+      "name": "source-category-collision-guard",
+      "description": "Prevents the common error where the source account (bank/CC being debited) is the same as the category account (expense line item). This creates a zero-net transaction that breaks reconciliation.",
+      "event": "before_tool_call",
+      "match": {
+        "tool_name_pattern": "^qb(Expense|Bill|Deposit|SalesReceipt)$"
+      },
+      "rules": [
+        {
+          "id": "source-not-equal-to-category",
+          "description": "Verify that the source account (the bank or credit card account the money is coming from/going to) is NOT the same as any category account in the line items. If they are the same, the transaction nets to zero in that account, which is almost always an error.",
+          "validate_parameter_logic": {
+            "check": "sourceAccountId != any(lines[].accountId)",
+            "applies_to": "transactions with both a source account and line items"
+          },
+          "error_message": "ACCOUNT COLLISION: The source account (bank/CC) is the same as a category account in the line items. This creates a zero-net entry that breaks reconciliation. The source account is WHERE the money comes from. The line item account is WHAT it was spent on. They must be different. Example: Source = 'Business Checking', Line = 'Office Supplies' — not both 'Business Checking'."
+        }
+      ]
+    },
+
     {
       "name": "void-transaction-guard",
-      "description": "Extra caution before voiding or deleting any transaction",
+      "description": "Extra caution before voiding or deleting any transaction — must fetch and verify details first",
       "event": "before_tool_call",
       "match": {
         "tool_name_pattern": "^qbVoidTransaction$"
@@ -35,12 +178,22 @@
           "description": "Must fetch the transaction details before voiding to confirm the right transaction",
           "require_prior_tool_call": "qbFetchTransactions",
           "error_message": "SAFETY VIOLATION: You must fetch and verify the transaction details via qbFetchTransactions before voiding it. Voiding the wrong transaction loses the audit trail permanently."
+        },
+        {
+          "id": "verify-void-target",
+          "description": "Cross-reference the transaction ID being voided against the results of qbFetchTransactions. The ID must appear in those results — never void a transaction you haven't just looked up and shown to the user.",
+          "cross_reference_parameter": {
+            "current_param": "transactionId",
+            "must_match_result_from": "qbFetchTransactions"
+          },
+          "error_message": "VOID TARGET MISMATCH: The transaction ID you are about to void was NOT in the results of your most recent qbFetchTransactions call. You may be voiding the wrong transaction. Re-fetch and verify before proceeding."
         }
       ]
     },
+
     {
       "name": "batch-safety-guard",
-      "description": "Validates batch operations follow safety protocol",
+      "description": "Validates batch operations follow safety protocol with enhanced checks",
       "event": "before_tool_call",
       "match": {
         "tool_name_pattern": "^qbBatch$"
@@ -51,9 +204,25 @@
           "description": "qbMasterData must be called before batch operations",
           "require_prior_tool_call": "qbMasterData",
           "error_message": "SAFETY VIOLATION: You must call qbMasterData to verify vendor/customer and account IDs before running a batch operation. Batch errors affect multiple transactions at once."
+        },
+        {
+          "id": "batch-type-homogeneity",
+          "description": "Verify all operations in the batch are the same transaction type. Mixed-type batches (e.g., Expenses and Bills in one call) are not supported and will produce unpredictable results.",
+          "validate_parameter_logic": {
+            "check": "all items in operations[] have the same type field",
+            "applies_to": "the operations array parameter"
+          },
+          "error_message": "BATCH TYPE MIX: The batch contains mixed transaction types. All items in a single qbBatch call must be the same type (all Expenses, all Bills, etc.). Split into separate batches by type."
+        },
+        {
+          "id": "require-duplicate-check-for-batch",
+          "description": "qbFetchTransactions must be called with a date range covering all batch items before submitting",
+          "require_prior_tool_call": "qbFetchTransactions",
+          "error_message": "SAFETY VIOLATION: You must call qbFetchTransactions with a date range covering all items in the batch to check for duplicates before submitting. Batch duplicates are especially costly to clean up."
         }
       ]
     },
+
     {
       "name": "bank-feed-flag-quality",
       "description": "Ensures flagged items include reasoning for the CPA",
@@ -70,21 +239,26 @@
             "require_param": "aiReasoning",
             "error_message": "QUALITY CHECK: When flagging a transaction for CPA review, you must include aiReasoning explaining WHY you are uncertain. Without context, the CPA cannot review efficiently."
           }
-        }
-      ]
-    },
-    {
-      "name": "journal-entry-balance-check",
-      "description": "Reminds agent that journal entry debits must equal credits",
-      "event": "before_tool_call",
-      "match": {
-        "tool_name_pattern": "^qbJournalEntry$"
-      },
-      "rules": [
+        },
         {
-          "id": "debit-credit-balance",
-          "description": "Journal entry lines must balance",
-          "advisory_message": "REMINDER: Verify that total debits equal total credits in this journal entry. Unbalanced entries will be rejected by QuickBooks and may indicate a categorization error."
+          "id": "require-specific-reasoning",
+          "description": "aiReasoning must be specific, not generic. It should state one of: 'New vendor not in memory', 'Amount $X is Nx the usual $Y', 'Multiple possible categories: A, B, C', 'Description is ambiguous: [what it says]', 'Outstanding bill/invoice may apply', or a similarly specific reason.",
+          "check_parameter": {
+            "if_param_equals": { "action": "flag" },
+            "validate_param_quality": {
+              "param": "aiReasoning",
+              "min_length": 20,
+              "must_not_be_generic": true,
+              "bad_examples": ["not sure", "uncertain", "needs review", "unknown", "flagging for review"],
+              "good_examples": [
+                "New vendor 'ACME LLC' not in agent memory — no account mapping exists",
+                "Amount $12,500 is 3x the usual $4,200 for Office Depot",
+                "Multiple possible categories: Office Supplies, Computer Equipment, or Repairs",
+                "Description 'CHECKCARD 0315' is ambiguous — cannot determine vendor or purpose"
+              ]
+            },
+            "error_message": "LOW-QUALITY FLAG: Your aiReasoning is too vague. The CPA needs specific context to review efficiently. State exactly WHY you are flagging: is the vendor new? Is the amount unusual? Are there multiple possible categories? Is the description ambiguous? Be specific."
+          }
         }
       ]
     }
