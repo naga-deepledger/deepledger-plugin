@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0] - 2026-04-01
+
+### Added
+- **`/bootstrap` command**: First-time client onboarding — reads 12 months of QB history, extracts vendor/customer/account mappings, presents summary to CPA for review, seeds agent memory with upvote cap of 5. Supports review, status, and reset modes.
+- **Bootstrap workflow in bookkeeping skill**: Full extract → analyze → present → seed → mark workflow
+- **Bootstrap detection in `/loop` and `/bank-feed`**: Auto-warns if client hasn't been bootstrapped, recommends running `/bootstrap` first
+- **Amount range anomaly detection**: Bootstrap stores min/max/avg per vendor — flags transactions 3x outside learned range
+- **Memory lifecycle documentation**: Bootstrap (cap 5) → real-time upvotes (+1) → CPA corrections override
+
+### Changed
+- **Accountant agent**: Added bootstrap as core responsibility #1, expanded memory section with lifecycle and bootstrap vs real-time distinction
+- **README**: Added bootstrap to quick-start flow, command table, and agent memory section
+
 ## [1.1.0] - 2026-04-01
 
 ### Changed

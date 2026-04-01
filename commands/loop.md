@@ -14,6 +14,14 @@ Run the autonomous bookkeeping loop — checks for pending work, processes trans
 Use the **Accountant** agent with the **Bookkeeping** skill.
 Follow the `getGuide(guideType="autonomous_loop")` workflow.
 
+### Step 0: BOOTSTRAP CHECK
+- `agentMemory(operation="read", type="bootstrap_status")`
+- If NOT bootstrapped:
+  - Warn: "This client has not been bootstrapped. The agent has no learned mappings — most transactions will be flagged for review."
+  - Recommend: "Run `/bootstrap` first for much better accuracy."
+  - If user confirms to proceed anyway, continue (but expect high flag rate)
+  - If running unattended (scheduled), auto-run bootstrap before first cycle
+
 ### Step 1: INITIALIZE — Resume or Start
 - Read worklog: `agentMemory(operation="read", type="worklog")`
 - If a previous cycle has `status="running"`:

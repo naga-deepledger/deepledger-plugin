@@ -13,6 +13,11 @@ Process unrecorded bank and credit card transactions from the bank feed.
 
 Use the **Accountant** agent with the **Bookkeeping** skill.
 
+### Bootstrap Check
+Before processing, check: `agentMemory(operation="read", type="bootstrap_status")`
+- If NOT bootstrapped, warn: "This client hasn't been bootstrapped — most vendors are unknown. Run `/bootstrap` first for better accuracy, or proceed knowing most items will be flagged."
+
+### Processing
 1. Fetch unprocessed transactions: `bankFeed(action="fetch")`
 2. For each transaction, evaluate confidence using enrichment data:
    - **High confidence** (vendor in memory, 3+ upvotes) → show and record with confirmation

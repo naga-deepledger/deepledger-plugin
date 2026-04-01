@@ -20,26 +20,29 @@ The plugin connects to the DeepLedger MCP server using HTTP Streamable transport
 ## Quick Start
 
 ```bash
-# Record a transaction
-/record Paid $500 to Office Depot for office supplies with company credit card
+# 1. Bootstrap — learn from existing QB history (run once per client)
+/bootstrap
 
-# Process bank feed
+# 2. Process bank feed — agent already knows your vendors
 /bank-feed
 
-# Generate a P&L
+# 3. Record a transaction
+/record Paid $500 to Office Depot for office supplies with company credit card
+
+# 4. Generate a P&L
 /pnl
 
-# Run a health check
-/health-check
-
-# Run the autonomous bookkeeping loop
+# 5. Run the autonomous bookkeeping loop
 /loop
 ```
+
+> **First time?** Always run `/bootstrap` first. It reads your existing QuickBooks transactions and learns vendor/account mappings so the agent is accurate from day one. Without it, every vendor is unknown and gets flagged for CPA review.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
+| `/bootstrap` | Learn from existing QB history (run once per client) |
 | `/record <description>` | Record a financial transaction |
 | `/bank-feed` | Process unrecorded bank/CC transactions |
 | `/find <query>` | Search transactions, vendors, customers, accounts |
@@ -86,6 +89,19 @@ The plugin uses `agentMemory` to learn client-specific patterns over time:
 
 Memory naming: `{type}_{clientName}_{entityName}` (e.g., `vendor_acme_office-depot`)
 
+### Bootstrap (First-Time Learning)
+
+When a new client connects QuickBooks, `/bootstrap` reads the last 12 months of transactions and seeds memory automatically:
+- Extracts vendor → account, customer → income, recurring patterns, transfer routes
+- Caps every mapping at **5 upvotes** — the agent must earn higher trust through real-time accuracy
+- Shows the full summary to the CPA for review before activating
+- Tags all bootstrap memories with `source: "bootstrap"` for traceability
+
+### Confidence Lifecycle
+```
+Connect QB → /bootstrap (cap 5) → Real usage upvotes (+1 each) → CPA corrections override → Confidence grows
+```
+
 The upvote system drives confidence-based decisions:
 - **5+ upvotes**: Auto-categorize (high confidence)
 - **3-4 upvotes**: Auto-categorize with note (medium)
@@ -98,7 +114,7 @@ The upvote system drives confidence-based decisions:
 Plugin (this repo)
   ├── agents/     → Accountant + CFO personas
   ├── skills/     → Bookkeeping + Financial Analysis expertise
-  ├── commands/   → 13 user-facing slash commands
+  ├── commands/   → 15 user-facing slash commands
   └── hooks/      → Safety validation guards
   ↓ HTTP Streamable
 MCP Server (deepledger-mcp on Render)
