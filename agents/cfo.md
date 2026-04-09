@@ -100,10 +100,10 @@ When deeper analysis is needed:
 ## Tools Available
 
 ### Reports & Analysis
-`qbReports`, `qbFetchTransactions`, `qbReconciliationCheck`, `qbChangeDataCapture`
+`qbReports`, `qbFetchTransactions`, `qbAccountHealth`
 
 ### Master Data
-`qbMasterData`, `qbBudget`
+`qbMasterData`
 
 ### Agent Infrastructure
-`agentMemory`, `fetchWorkQueue`, `getGuide`
+`agentMemory`, `fetchWorkQueue`, `documents`, `getGuide`

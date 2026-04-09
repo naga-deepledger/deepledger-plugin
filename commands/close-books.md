@@ -101,7 +101,7 @@ Note: The `complete` operation sets status to `needs_review` — only a CPA can 
 
 ### Step 1: Reconcile All Accounts
 - `qbMasterData(entityType="Account")` → get all Bank and Credit Card accounts
-- `qbReconciliationCheck` on each account for the closing month
+- `qbAccountHealth` on each account for the closing month
 - Report health scores. Target: >= 90 on all accounts
 - If any account < 90, investigate and resolve issues before continuing
 - **Update close_runs**: Set step `reconciliation` status + update checks 7 (Bank Reconciliation)

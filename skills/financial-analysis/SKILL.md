@@ -88,7 +88,7 @@ Flag these conditions:
 - DSO increasing month-over-month
 - Cash runway < 3 months
 
-Use `qbReconciliationCheck` to detect statistical outliers automatically.
+Use `qbAccountHealth` to detect statistical outliers automatically.
 
 ### Step 6: Synthesize & Present
 
@@ -114,7 +114,7 @@ Save key insights to `agentMemory` for longitudinal tracking.
 ## Health Check Quick Mode
 
 For a fast health check:
-1. `qbReconciliationCheck` on all bank + CC accounts
+1. `qbAccountHealth` on all bank + CC accounts
 2. `qbReports(reportType="ProfitAndLoss")` for current month
 3. `qbReports(reportType="AgedReceivables")` for overdue AR
 4. `qbReports(reportType="AgedPayables")` for upcoming AP

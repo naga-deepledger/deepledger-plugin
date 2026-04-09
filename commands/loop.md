@@ -45,9 +45,6 @@ Gather work from three sources (in priority order):
 3. **Unprocessed bank feed**:
    `bankFeed(action="fetch")`
 
-4. **Changed QB data** (detect external changes):
-   `qbChangeDataCapture` with `lastProcessedTimestamp` from worklog
-
 If zero pending items across all sources, update worklog to `status="completed"` and exit.
 
 After completing this step, update worklog: `lastCompletedStep="check"`
@@ -56,7 +53,7 @@ After completing this step, update worklog: `lastCompletedStep="check"`
 For each pending item:
 - `agentMemory` — check vendor/customer account mappings and confidence (upvote count)
 - `agentMemory` — check client preferences and special rules
-- `fetchDocuments` — read linked documents if available
+- `documents(source="deepledger")` — read linked documents if available
 - Use enrichment data from bank feed (already includes memory matches)
 
 Confidence levels:
@@ -111,7 +108,7 @@ After processing:
 After completing this step, update worklog: `lastCompletedStep="learn"`
 
 ### Step 7: AUDIT & REPORT — Health Check
-1. `qbReconciliationCheck` on all active bank/CC accounts
+1. `qbAccountHealth` on all active bank/CC accounts
 2. Update worklog: `status="completed"`, final counts, timestamp
 3. Compare health scores to previous cycle
 4. Present cycle summary:
@@ -143,7 +140,7 @@ The worklog memory entry tracks cycle state for crash recovery:
   lastCompletedStep: "check" | "analyze" | "act" | "escalate" | "learn" | "audit",
   startedAt: ISO timestamp,
   completedAt: ISO timestamp,
-  lastProcessedTimestamp: ISO timestamp (for qbChangeDataCapture),
+  lastProcessedTimestamp: ISO timestamp,
   itemsRecorded: number,
   itemsFlagged: number,
   failedItems: [{ id, reason, retryCount }],

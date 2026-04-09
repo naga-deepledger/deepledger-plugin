@@ -106,7 +106,7 @@ qbFetchTransactions → filter by vendor + date (±3 days) + amount range
 
 ### 5. Attach Supporting Documents
 ```
-qbGetUploadUrl → get pre-signed URL, then execute the curl command
+qbAttachFile → get pre-signed URL, then execute the curl command
 ```
 Note: entityType for expenses = "Purchase" (not "Expense")
 
@@ -181,7 +181,7 @@ Follow the `getGuide(guideType="reconciliation")` workflow:
 
 Follow the `getGuide(guideType="month_end_closing")` workflow:
 
-1. Reconcile all bank & CC accounts (`qbReconciliationCheck`)
+1. Reconcile all bank & CC accounts (`qbAccountHealth`)
 2. Review outstanding AP/AR (`qbReports` → AgedPayables, AgedReceivables)
 3. Record accruals & deferrals (`qbJournalEntry`)
 4. Record depreciation (`qbJournalEntry`)
