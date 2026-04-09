@@ -14,20 +14,27 @@ Run the month-end close workflow — reconciliation, accruals, depreciation, and
 Use the **Accountant** agent with the **Bookkeeping** skill.
 Follow the `getGuide(guideType="month_end_closing")` workflow.
 
-### Structured Output — close_runs Table
+### Structured Output — closeRun MCP Tool
 
-All results MUST be written to the `close_runs` table (not memory) using the Supabase MCP.
-Use `execute_sql` to upsert the row for the target period.
+All results MUST be written via the `closeRun` MCP tool (not memory, not execute_sql).
 
-#### Before starting — create or update the close_runs row:
-```sql
-INSERT INTO close_runs (organization_id, firm_id, period, period_label, status, started_at, result)
-VALUES ('<org_id>', '<firm_id>', '2026-03', 'March 2026', 'in_progress', now(), '{}')
-ON CONFLICT (organization_id, period)
-DO UPDATE SET status = 'in_progress', started_at = now(), updated_at = now();
+#### Before starting:
+```
+closeRun(operation="start", period="2026-03", periodLabel="March 2026")
 ```
 
-#### After each step — update `result` JSONB incrementally.
+#### After each step — update incrementally so the portal shows live progress:
+```
+closeRun(operation="updateStep", step={id: "reconciliation", label: "Reconcile All Accounts", status: "passed", ...})
+closeRun(operation="updateChecks", checks=[{id: 7, label: "Bank Reconciliation", status: "pass", value: "95/100", ...}])
+closeRun(operation="addEntries", adjustingEntries=[{type: "depreciation", description: "...", ...}])
+closeRun(operation="setFinancials", financials={revenue: 85000, expenses: 62000, ...})
+```
+
+#### When complete:
+```
+closeRun(operation="complete", score=14, actionItems=2)
+```
 
 The `result` column uses this schema:
 
@@ -90,35 +97,7 @@ The `result` column uses this schema:
 }
 ```
 
-#### Update pattern — use jsonb_set to update individual steps without overwriting the whole result:
-```sql
-UPDATE close_runs
-SET result = jsonb_set(
-  result,
-  '{steps,0,status}',
-  '"passed"'
-),
-updated_at = now()
-WHERE organization_id = '<org_id>' AND period = '2026-03';
-```
-
-Or replace the full result after each step completes:
-```sql
-UPDATE close_runs
-SET result = '<full JSON>'::jsonb, updated_at = now()
-WHERE organization_id = '<org_id>' AND period = '2026-03';
-```
-
-#### When complete — set final status:
-```sql
-UPDATE close_runs
-SET status = CASE WHEN <action_items> > 0 THEN 'needs_review' ELSE 'needs_review' END,
-    completed_at = now(),
-    updated_at = now()
-WHERE organization_id = '<org_id>' AND period = '2026-03';
-```
-
-Note: Status goes to `needs_review` (not `closed`) — only a CPA can close in the portal.
+Note: The `complete` operation sets status to `needs_review` — only a CPA can close in the portal.
 
 ### Step 1: Reconcile All Accounts
 - `qbMasterData(entityType="Account")` → get all Bank and Credit Card accounts
