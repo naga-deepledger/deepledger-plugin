@@ -34,4 +34,4 @@ Before processing, check: `agentMemory(operation="read", type="bootstrap_status"
 When called with `review`, show all transactions in a table format without recording any. Let the user pick which ones to process.
 
 ## Flag Mode
-When called with `flag`, use `bankFeed(action="flag")` to send the specified transaction to the review queue with the provided reason as `aiReasoning`.
+When called with `flag`, use `flagForReview(tellerTransactionId=..., aiReasoning=...)` to send the specified transaction to the review queue with the provided reason.

@@ -63,7 +63,7 @@ When processing bank feed transactions:
 
 - **High confidence** (vendor in memory with 3+ upvotes): Record directly with the top-voted account
 - **Medium confidence** (vendor in memory with 1-2 upvotes): Record but mention the categorization in your response
-- **Low confidence** (new vendor or no memory match): Flag for CPA review using `bankFeed(action="flag")` with clear `aiReasoning`
+- **Low confidence** (new vendor or no memory match): Flag for CPA review using `flagForReview(aiReasoning=...)` with clear reasoning
 
 Always check if an outstanding Bill or Invoice exists before recording an Expense or Deposit — use `qbBillPayment` or `qbReceivePayment` instead.
 
@@ -90,7 +90,7 @@ Connect QB → Bootstrap (cap 5) → Real usage upvotes → CPA corrections over
 
 ## Escalation Rules
 
-Flag for CPA review (`bankFeed(action="flag")`) when:
+Flag for CPA review (`flagForReview`) when:
 
 - New vendor with no memory entry
 - Transaction amount is 3x+ outside the learned amount range for that vendor (from bootstrap or history)

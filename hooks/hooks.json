@@ -306,27 +306,25 @@
     },
 
     {
-      "name": "bank-feed-flag-quality",
-      "description": "Ensures flagged items include reasoning for the CPA",
+      "name": "flag-for-review-quality",
+      "description": "Ensures flagged review items include specific reasoning for the CPA",
       "event": "before_tool_call",
       "match": {
-        "tool_name_pattern": "^bankFeed$"
+        "tool_name_pattern": "^flagForReview$"
       },
       "rules": [
         {
-          "id": "require-reasoning-for-flag",
-          "description": "When flagging for review, aiReasoning must be provided so the CPA has context",
+          "id": "require-reasoning",
+          "description": "aiReasoning must be provided so the CPA has context",
           "check_parameter": {
-            "if_param_equals": { "action": "flag" },
             "require_param": "aiReasoning",
-            "error_message": "QUALITY CHECK: When flagging a transaction for CPA review, you must include aiReasoning explaining WHY you are uncertain. Without context, the CPA cannot review efficiently."
+            "error_message": "QUALITY CHECK: When flagging for CPA review, you must include aiReasoning explaining WHY you need CPA input. Without context, the CPA cannot review efficiently."
           }
         },
         {
           "id": "require-specific-reasoning",
-          "description": "aiReasoning must be specific, not generic. It should state one of: 'New vendor not in memory', 'Amount $X is Nx the usual $Y', 'Multiple possible categories: A, B, C', 'Description is ambiguous: [what it says]', 'Outstanding bill/invoice may apply', or a similarly specific reason.",
+          "description": "aiReasoning must be specific, not generic. It should state one of: 'New vendor not in memory', 'Amount $X is Nx the usual $Y', 'Multiple possible categories: A, B, C', 'Description is ambiguous: [what it says]', 'Outstanding bill/invoice may apply', 'Need guidance on how to record this invoice', or a similarly specific reason.",
           "check_parameter": {
-            "if_param_equals": { "action": "flag" },
             "validate_param_quality": {
               "param": "aiReasoning",
               "min_length": 20,
@@ -336,10 +334,11 @@
                 "New vendor 'ACME LLC' not in agent memory — no account mapping exists",
                 "Amount $12,500 is 3x the usual $4,200 for Office Depot",
                 "Multiple possible categories: Office Supplies, Computer Equipment, or Repairs",
-                "Description 'CHECKCARD 0315' is ambiguous — cannot determine vendor or purpose"
+                "Description 'CHECKCARD 0315' is ambiguous — cannot determine vendor or purpose",
+                "Uploaded invoice from unknown vendor — need CPA to confirm account and verify amounts"
               ]
             },
-            "error_message": "LOW-QUALITY FLAG: Your aiReasoning is too vague. The CPA needs specific context to review efficiently. State exactly WHY you are flagging: is the vendor new? Is the amount unusual? Are there multiple possible categories? Is the description ambiguous? Be specific."
+            "error_message": "LOW-QUALITY FLAG: Your aiReasoning is too vague. The CPA needs specific context to review efficiently. State exactly WHY you are flagging: is the vendor new? Is the amount unusual? Are there multiple possible categories? Is the description ambiguous? Is this a document that needs verification? Be specific."
           }
         }
       ]

@@ -91,7 +91,7 @@ After completing this step, update worklog: `lastCompletedStep="act"`, record `i
 
 ### Step 5: ESCALATE — Flag Uncertain Items
 For low-confidence or unknown items:
-- `bankFeed(action="flag")` with specific `aiReasoning`:
+- `flagForReview` with specific `aiReasoning`:
   - "New vendor not in memory"
   - "Amount $X is 3x the usual $Y for this vendor"
   - "Multiple possible categories, no clear winner"

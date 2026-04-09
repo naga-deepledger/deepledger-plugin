@@ -172,7 +172,7 @@ Follow the `getGuide(guideType="reconciliation")` workflow:
 2. For each transaction, evaluate confidence:
    - **High** (3+ upvotes in memory) → record directly
    - **Medium** (1-2 upvotes) → record with note
-   - **Low** (no match) → `bankFeed(action="flag")` for CPA review
+   - **Low** (no match) → `flagForReview(tellerTransactionId=..., aiReasoning=...)` for CPA review
 3. Check for outstanding Bills/Invoices before recording Expenses/Deposits
 4. After recording, `agentMemory` upvote the account used
 5. `fetchWorkQueue(source="markRecorded")` to prevent re-processing
