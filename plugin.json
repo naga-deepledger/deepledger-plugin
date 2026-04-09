@@ -1,5 +1,6 @@
 {
   "name": "deepledger",
   "version": "1.3.0",
-  "description": "Autonomous AI accounting plugin — bookkeeping, financial analysis, and bank reconciliation powered by QuickBooks Online"
+  "description": "Autonomous AI accounting plugin — bookkeeping, financial analysis, and bank reconciliation powered by QuickBooks Online",
+  "hooks": "./hooks/hooks.json"
 }
