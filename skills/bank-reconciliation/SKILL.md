@@ -1,143 +1,128 @@
 ---
 name: bank-reconciliation
-description: Reconcile bank and credit card accounts — match transactions, identify discrepancies, resolve uncleared items, and validate account health scores. Use when the user mentions reconciliation, bank matching, uncleared items, or account health.
+description: Reconcile bank and credit card accounts — process unrecorded bank transactions, fix duplicates and uncategorized items, then complete the reconciliation in QuickBooks Online via browser. Use when the user mentions reconciliation, bank matching, uncleared items, account health, or closing the books.
 ---
 
 # Bank Reconciliation Skill
 
-Match bank and credit card statement activity to QuickBooks records. Identify discrepancies, resolve uncleared items, and ensure account balances are accurate.
+Keep bank and credit card accounts clean and audit-ready. Reconciliation runs in two phases:
+
+1. **Prep phase (MCP tools)** — health check, record missing transactions, resolve duplicates and uncategorized items
+2. **Reconcile phase (browser)** — open QB Online reconciliation UI, mark transactions cleared, enter statement balance, finalize
 
 ## Trigger
 
 Activate when the user wants to:
-- Reconcile a bank or credit card account
-- Check account health scores
-- Investigate uncleared or missing transactions
-- Find duplicate transactions
-- Clean up uncategorized transactions
-- Verify bank balances match QB balances
+- Check account health or scores
+- Process unrecorded bank feed transactions
+- Find and resolve duplicate transactions
+- Clean up uncategorized or mis-categorized transactions
+- Complete a full reconciliation in QuickBooks Online
 
-## How Reconciliation Works
+## Tool Coverage
 
-```
-Bank Statement Balance
-  - Outstanding checks (in QB, not yet cleared at bank)
-  + Deposits in transit (in QB, not yet posted at bank)
-  = QB Book Balance
-```
-
-If these don't match, there's a discrepancy to investigate.
+| Capability | How |
+|------------|-----|
+| Flag duplicates, uncategorized, outliers, past-due | `qbAccountHealth` |
+| Fetch unprocessed bank transactions to record | `bankFeed` |
+| Investigate specific transactions | `qbFetchTransactions` |
+| Void supported transaction types | `qbVoidTransaction` |
+| Mark transactions as cleared in QB | Browser → QB Reconcile UI |
+| Enter statement ending balance | Browser → QB Reconcile UI |
+| Complete / finalize reconciliation | Browser → QB Reconcile UI |
 
 ## Workflow: Account Health Check
 
-The fastest way to assess reconciliation status:
+Run this first to find what needs fixing before touching the reconciliation screen.
 
 1. **Get accounts** — `qbMasterData(entityTypes=["account"])` → filter for Bank and Credit Card types
 2. **Run health check** — `qbAccountHealth(accountId, startDate, endDate)` on each account
 3. **Review flags**:
-   - **Duplicates** — same amount + date + vendor (high severity if > $1,000)
-   - **Uncategorized** — booked to "Ask My Accountant" or "Uncategorized" (high if > $500)
+   - **Duplicates** — same amount + date + vendor; high severity if > $1,000
+   - **Uncategorized** — booked to "Ask My Accountant" or "Uncategorized"; high if > $500
    - **Outliers** — amount exceeds 2 standard deviations from mean
-   - **Past-due items** — transactions with dueDate older than 7 days
-4. **Score** — 0-100 scale. Penalty: high flag = -5, medium = -3, low = -1
+   - **Past-due** — transactions with `dueDate` older than 7 days (checks `dueDate` field, not QB cleared status)
+4. **Score** — 0–100. Penalty: high = -5, medium = -3, low = -1
 
 ### Score Thresholds
 
 | Score | Status | Action |
 |-------|--------|--------|
-| 95-100 | Audit-ready | No action needed |
-| 90-94 | Good | Minor cleanup |
-| 80-89 | Needs attention | Several issues to resolve |
-| < 80 | Critical | Prioritize reconciliation immediately |
+| 95–100 | Audit-ready | Proceed to reconcile |
+| 90–94 | Good | Minor cleanup first |
+| 80–89 | Needs attention | Resolve flags before reconciling |
+| < 80 | Critical | Fix issues before touching the reconciliation screen |
 
-## Workflow: Full Account Reconciliation
+## Workflow: Process Bank Feed Transactions
 
-For each Bank and Credit Card account:
+`bankFeed` returns transactions that exist at the bank but are **not yet recorded in QB**. Record each one before reconciling.
 
-### Step 1: Pull QB Transactions
-```
-qbFetchTransactions → all transactions for the account in the reconciliation period
-```
-Use report scan mode (omit transactionType, provide accountId + dates) to see all transaction types touching the account.
+1. **Fetch** — `bankFeed(action="fetch", accountId?, sinceDate?)`
+2. **For each transaction**:
+   - Check `agentMemory` for vendor/category mapping
+   - **Known vendor + category** → record using the correct tool (see table below)
+   - **Unknown or ambiguous** → `flagForReview` with reasoning
+3. **Duplicate check before recording** — `qbFetchTransactions` (report scan, same accountId + date range) to confirm it isn't already in QB
 
-### Step 2: Pull Bank Data
-```
-bankFeed(action="fetch") → unprocessed bank transactions
-```
-These are the raw bank statement lines that need to be matched or recorded.
+### Bank Line → Recording Tool
 
-### Step 3: Match Transactions
+| Bank Line Type | Tool |
+|----------------|------|
+| Vendor payment / expense | `qbExpense` |
+| Customer deposit / payment received | `qbDeposit` |
+| Transfer between accounts | `qbTransfer` |
+| Payroll or complex entry | `qbJournalEntry` |
+| Unclear / needs CPA | `flagForReview` |
 
-For each bank statement line:
-- **Exact match** — Same amount, same date (±2 days), same vendor → mark as reconciled
-- **Partial match** — Amount matches but date/vendor differ → flag for review
-- **No match** — Bank has it, QB doesn't → missing transaction, needs recording
-- **QB-only** — QB has it, bank doesn't → outstanding check/deposit, or possible error
+## Workflow: Resolve Duplicate Flags
 
-### Step 4: Resolve Discrepancies
+1. **Pull both entries** — `qbFetchTransactions` to confirm details of each
+2. **Verify it's a true duplicate** — same amount, vendor, and purpose (two similar charges from one vendor can both be legitimate)
+3. **Check voidable type** — `qbVoidTransaction` supports: `BillPayment`, `Invoice`, `Payment`, `SalesReceipt`, `CreditMemo`, `Purchase`, `RefundReceipt`, `Transfer`
+   - `Bill`, `JournalEntry`, `Deposit`, `Expense`, `VendorCredit` cannot be voided via tools — flag for CPA to handle in QB
+4. **Confirm with user** before voiding — preserves audit trail, unlike delete
+5. **Re-run** `qbAccountHealth` to verify the flag is cleared
 
-**Missing in QB (bank has it, QB doesn't):**
-1. Check `agentMemory` for vendor mapping
-2. If known vendor → record using standard transaction workflow
-3. If unknown vendor → `flagForReview` with aiReasoning: "Unmatched bank transaction — no QB record found"
+## Workflow: Resolve Uncategorized Flags
 
-**Missing in bank (QB has it, bank doesn't):**
-1. If recent (< 5 days) → likely outstanding, will clear soon
-2. If old (> 30 days) → investigate: was the check cashed? Did the transfer complete?
-3. If very old (> 90 days) → may need voiding with CPA approval
+1. **Fetch transaction details** — `qbFetchTransactions` report scan (accountId + dates) to find entries in "Ask My Accountant" or "Uncategorized"
+2. **Check memory** — `agentMemory` for vendor-to-account mapping
+3. **Re-categorize if confident** — update with the correct account
+4. **Flag if uncertain** — `flagForReview` with `aiReasoning` explaining what's unknown
 
-**Duplicates detected:**
-1. Identify which is the correct entry (check dates, amounts, memos)
-2. `qbVoidTransaction` on the duplicate (requires CPA confirmation)
-3. Note: voiding preserves audit trail, deleting does not
+## Workflow: Complete Reconciliation in QB Online (Browser)
 
-**Uncategorized transactions:**
-1. Pull the specific transactions booked to "Ask My Accountant" or "Uncategorized"
-2. Check `agentMemory` for vendor mappings
-3. Re-categorize if confident, or `flagForReview` if uncertain
+Once the health score is clean and all bank feed items are recorded:
 
-### Step 5: Verify Balance
+1. **Open QB Online** — navigate to Bookkeeping → Reconcile in the browser
+2. **Select account** — choose the Bank or Credit Card account to reconcile
+3. **Enter statement details**:
+   - Beginning balance (should match QB's calculated opening balance)
+   - Ending balance from the bank statement
+   - Statement end date
+4. **Mark transactions cleared** — check off each transaction that appears on the bank statement; the running difference should approach $0.00
+5. **Investigate any remaining difference** — use `qbFetchTransactions` in a separate call to look up suspicious items while the reconciliation screen stays open
+6. **Stop and report** — show the user the current difference and a summary of uncleared items; **do not click "Finish now"** — wait for the user to review and explicitly confirm before finalizing
+7. **Finalize only on explicit user confirmation** — proceed to click "Finish now" only when the user says the difference is acceptable and instructs you to complete. Never auto-finalize even if the difference is $0.00
+8. **Download reconciliation report** — QB generates a PDF summary after finalization; save or attach for audit records
 
-After resolving all items:
-1. Re-run `qbAccountHealth` to verify improved score
-2. Compare QB balance to bank statement balance
-3. Document any remaining reconciling items (outstanding checks, deposits in transit)
-
-## Workflow: Investigate Specific Flags
-
-When investigating a flagged item from health check:
-
-1. **Duplicate flag** — `qbFetchTransactions` to pull both entries, compare details, confirm which to void
-2. **Uncategorized flag** — Read transaction details, check `agentMemory`, re-categorize or flag
-3. **Outlier flag** — Verify the amount is correct (not a data entry error), check if it's a valid large transaction
-4. **Past-due flag** — Check if the item has cleared at the bank, investigate why it's still uncleared in QB
-
-## Workflow: Credit Card Reconciliation
-
-Credit cards follow the same process with one addition:
-
-1. Run `qbAccountHealth` on the CC account
-2. Match statement charges to QB expenses
-3. **Statement balance check** — CC statement balance should match QB CC liability balance
-4. Common issues:
-   - Personal charges on business card → reclassify to Owner's Draw/Loan
-   - Pending charges → will post with slight date differences
-   - Returns/credits → verify they're recorded as negative amounts or vendor credits
+> **Hard rule: never click "Finish now" / "Complete reconciliation" without explicit user instruction.** The user may need to fix transactions, adjust the statement balance, or defer finalization to the CPA.
 
 ## Safety Checklist
 
-- [ ] All Bank and Credit Card accounts identified via `qbMasterData`
-- [ ] Health check run on each account for the correct period
-- [ ] Duplicate transactions confirmed before voiding (never void without verification)
-- [ ] Uncategorized items resolved or flagged for CPA review
-- [ ] Ending balance verified against bank statement
-- [ ] All reconciling items documented
+- [ ] `qbAccountHealth` run and flags resolved before opening reconciliation screen
+- [ ] Bank feed processed — no unrecorded transactions remaining for the period
+- [ ] Duplicate check completed before recording any bank feed item
+- [ ] Voidable transaction type confirmed before calling `qbVoidTransaction`
+- [ ] Uncategorized items resolved or flagged — none left in "Ask My Accountant"
+- [ ] Difference reported to user and user has explicitly confirmed to finalize — never auto-complete
+- [ ] User confirmation before any void or re-categorization
 
 ## Common Mistakes to Avoid
 
-- Voiding a transaction without confirming it's actually a duplicate — check dates, amounts, and vendors carefully
-- Ignoring old outstanding items — they may indicate a recording error, not just timing
-- Reconciling against the wrong statement period
-- Categorizing unfamiliar transactions without checking agent memory or flagging for review
-- Forgetting credit card accounts — they need reconciliation too
-- Not re-running health check after fixes to verify the score improved
+- Opening the reconciliation screen before fixing health flags — unresolved duplicates and uncategorized items make the difference impossible to close
+- Attempting to `qbVoidTransaction` on `Bill`, `JournalEntry`, `Deposit`, or `Expense` — not supported, will fail
+- Voiding without confirming it's a true duplicate — two similar charges may both be legitimate
+- Recording a bank feed transaction without checking if it already exists in QB first
+- Clicking "Finish now" without explicit user instruction — even at $0.00 difference, always stop and confirm first
+- Force-finishing a reconciliation with a non-zero difference — creates a discrepancy that compounds every month

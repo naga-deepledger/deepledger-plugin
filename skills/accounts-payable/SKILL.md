@@ -47,7 +47,7 @@ For immediate-pay purchases with no bill: `qbExpense` records the payment direct
 4. **Build bill** — Set `vendorId`, `txnDate`, `dueDate`, `lines` with account/amount
 5. **Confirm** — Show: vendor, total, due date, expense categories
 6. **Record** — `qbBill`
-7. **Attach** — If source document available, `qbAttachFile` (entityType = "Bill")
+7. **Attach** — `qbAttachFile` (entityType = "Bill") — fetch from portal, local file, drive, or user upload; preferred for audit-ready books
 8. **Learn** — `agentMemory` upvote vendor mapping
 
 ## Workflow: Pay a Bill
@@ -58,7 +58,8 @@ For immediate-pay purchases with no bill: `qbExpense` records the payment direct
 4. **Record** — `qbBillPayment` with `vendorId`, `paymentDate`, `bankAccountId`, `bills` array (billId + amount per bill)
 5. **Partial payments** — Pay less than the full bill amount; the bill remains partially outstanding
 6. **Multiple bills** — Pay several bills to one vendor in a single BillPayment using the `bills` array
-7. **Confirm** — Show: vendor, bills being paid, total, payment account
+7. **Attach** — `qbAttachFile` (entityType = "BillPayment") — remittance advice or bank confirmation; preferred for audit-ready books
+8. **Confirm** — Show: vendor, bills being paid, total, payment account
 
 ## Workflow: Record an Expense (Immediate Payment)
 
@@ -66,7 +67,8 @@ For immediate-pay purchases with no bill: `qbExpense` records the payment direct
 2. **Lookup** — `qbMasterData` for vendor ID, source account (bank/CC), category account
 3. **Duplicate check** — `qbFetchTransactions(transactionType="Purchase", entityId=vendorId)` matching amount and date
 4. **Record** — `qbExpense` with `paymentType`, `accountId` (source), `vendorId`, `lines` (category accounts)
-5. **Rule** — Source account (where money comes from) must differ from line accountId (what it was spent on)
+5. **Attach** — `qbAttachFile` (entityType = "Purchase") — receipt from portal, local file, drive, or user upload; preferred for audit-ready books
+6. **Rule** — Source account (where money comes from) must differ from line accountId (what it was spent on)
 
 ## Workflow: Apply Vendor Credit
 

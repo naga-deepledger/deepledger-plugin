@@ -38,7 +38,8 @@ For immediate-pay sales with no invoice: `qbSalesReceipt` → Undeposited Funds 
 4. **Build invoice** — Set `customerId`, `txnDate`, `dueDate`, `lines` with items/amounts
 5. **Confirm** — Show the user: customer, total, due date, line items
 6. **Record** — `qbInvoice` to create
-7. **Optional** — Set `emailStatus: "NeedToSend"` to auto-email the invoice from QB
+7. **Attach** — `qbAttachFile` (entityType = "Invoice") — signed contract, PO, or supporting doc from portal, local file, drive, or user upload; preferred for audit-ready books
+8. **Optional** — Set `emailStatus: "NeedToSend"` to auto-email the invoice from QB
 
 ## Workflow: Receive Payment
 
@@ -47,7 +48,8 @@ For immediate-pay sales with no invoice: `qbSalesReceipt` → Undeposited Funds 
 3. **Record** — `qbReceivePayment` with `customerId`, `totalAmount`, `paymentDate`, and `invoices` array
 4. **Partial payments** — If payment is less than invoice total, apply the amount received; the invoice stays partially outstanding
 5. **Overpayments** — QB creates an unapplied credit; the `unappliedAmount` in the response shows the excess
-6. **Update memory** — `agentMemory` upvote customer mapping
+6. **Attach** — `qbAttachFile` (entityType = "Payment") — bank remittance or payment confirmation; preferred for audit-ready books
+7. **Update memory** — `agentMemory` upvote customer mapping
 
 ## Workflow: Deposit to Bank
 
