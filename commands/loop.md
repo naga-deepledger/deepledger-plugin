@@ -53,7 +53,7 @@ After completing this step, update worklog: `lastCompletedStep="check"`
 For each pending item:
 - `agentMemory` — check vendor/customer account mappings and confidence (upvote count)
 - `agentMemory` — check client preferences and special rules
-- `documents(source="31st-ai")` — read linked documents if available
+- `documents(source="deepledger")` — read linked documents if available
 - Use enrichment data from bank feed (already includes memory matches)
 
 Confidence levels:

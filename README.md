@@ -1,21 +1,21 @@
-# 31st.ai Plugin
+# DeepLedger Plugin
 
 Claude Code plugin for autonomous AI bookkeeping and financial analysis powered by QuickBooks Online.
 
 ## Prerequisites
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed
-- A 31st.ai account with QuickBooks connected via the [portal](https://31st.ai)
-- MCP server running at `https://31st-ai-mcp.onrender.com/mcp`
+- A DeepLedger account with QuickBooks connected via the [portal](https://deepledger.ai)
+- MCP server running at `https://deepledger-mcp.onrender.com/mcp`
 
 ## Setup
 
 ```bash
 # Run Claude Code with the plugin
-claude --plugin-dir ./31st-ai-plugin
+claude --plugin-dir ./deepledger-plugin
 ```
 
-The plugin connects to the 31st.ai MCP server using HTTP Streamable transport. Authentication is handled via Supabase Bearer tokens — you'll be prompted to authenticate on first use.
+The plugin connects to the DeepLedger MCP server using HTTP Streamable transport. Authentication is handled via Supabase Bearer tokens — you'll be prompted to authenticate on first use.
 
 ## Quick Start
 
@@ -117,7 +117,7 @@ Plugin (this repo)
   ├── commands/   → 15 user-facing slash commands
   └── hooks/      → Safety validation guards
   ↓ HTTP Streamable
-MCP Server (31st-ai-mcp on Render)
+MCP Server (deepledger-mcp on Render)
   ├── 20+ QuickBooks tools
   ├── Agent infrastructure (work queue, memory, documents, bank feed)
   └── Supabase PostgreSQL backend
@@ -125,7 +125,7 @@ MCP Server (31st-ai-mcp on Render)
 
 ## Connecting QuickBooks
 
-1. Log in to [31st.ai](https://31st.ai)
+1. Log in to [deepledger.ai](https://deepledger.ai)
 2. Navigate to Settings > QuickBooks
 3. Click "Connect QuickBooks" and authorize access
 4. Once connected, the plugin can read and write to your QB company

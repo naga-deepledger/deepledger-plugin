@@ -134,7 +134,7 @@ Use `qbRecurringTransaction` for predictable, repeating entries:
 
 When documents (receipts, invoices, statements) are available:
 
-1. Fetch via `documents(source="31st-ai")` to get signed URLs
+1. Fetch via `documents(source="deepledger")` to get signed URLs
 2. Read document contents to extract transaction details
 3. After recording, attach the document using `qbAttachFile`
 4. Supported formats: PDF, JPG, PNG, GIF, XLSX, DOC, CSV (max 10 MB)

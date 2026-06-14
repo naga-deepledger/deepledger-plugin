@@ -40,7 +40,7 @@ Use the **Accountant** agent.
 2. **Display the transaction** — show the user: type, date, amount, vendor/customer, and transaction ID
 3. **Confirm the match** — ask the user to confirm this is the correct transaction
 4. **Determine the document source**:
-   - Portal document → user specifies the document name or ID from the 31st.ai portal
+   - Portal document → user specifies the document name or ID from the DeepLedger portal
    - Local file → user provides a file path
    - User upload → user will paste or drag the file into the conversation
 5. **Determine entityType** — use the mapping table above based on the transaction type

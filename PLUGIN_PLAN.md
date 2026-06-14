@@ -1,4 +1,4 @@
-# 31st.ai Claude Code Plugin — Implementation Plan
+# DeepLedger Claude Code Plugin — Implementation Plan
 
 > **Status**: Draft for review — implementation pending
 > **Date**: 2026-03-14
@@ -11,8 +11,8 @@
 
 ## 1. What This Plugin Is
 
-A Claude Code plugin that connects to the **hosted 31st.ai MCP server**
-(already running at `https://agent.31st.ai`) and layers bookkeeping
+A Claude Code plugin that connects to the **hosted DeepLedger MCP server**
+(already running at `https://agent.deepledger.ai`) and layers bookkeeping
 intelligence on top. Users install the plugin, authenticate via OAuth, and
 get an AI bookkeeper with zero configuration.
 
@@ -24,7 +24,7 @@ and JSON configs that tells Claude Code:
 
 ### What the Remote Server Provides (for context, NOT part of this plugin)
 
-The 31st.ai MCP server exposes these QuickBooks tools:
+The DeepLedger MCP server exposes these QuickBooks tools:
 - **qbMasterData** — Retrieve, create, or update master data (vendors, customers, accounts, items, classes, tax rates). Use operation='retrieve' (default) for lookups, 'create'/'update' for writes.
 - **qbFetchTransactions** — Look up specific transactions for editing, voiding, paying, linking, or duplicate-checking (returns IDs/SyncTokens/line items)
 - **qbReports** — Generate financial reports (ProfitAndLoss, BalanceSheet, CashFlow, AgedReceivables, AgedPayables, TrialBalance, TransactionList, CustomerIncome, VendorExpenses). TransactionList returns individual transactions with filtering by type, grouping by Customer/Vendor/Account, and client-side account ID filtering.
@@ -93,14 +93,14 @@ server's `/.well-known/oauth-authorization-server` endpoint.
 
 **Tool naming**: When connected via plugin, tools are prefixed:
 `mcp__plugin_<plugin-name>_<server-name>__<tool-name>`
-Example: `mcp__plugin_31st-ai_31st-ai__qbReports`
+Example: `mcp__plugin_deepledger_deepledger__qbReports`
 
 ---
 
 ## 3. Directory Structure to Create
 
 ```
-31st-ai-plugin/
+deepledger-plugin/
 ├── .claude-plugin/
 │   └── plugin.json
 ├── .mcp.json
@@ -140,15 +140,15 @@ Example: `mcp__plugin_31st-ai_31st-ai__qbReports`
 
 ```json
 {
-  "name": "31st-ai",
+  "name": "deepledger",
   "version": "1.0.0",
-  "description": "AI bookkeeper with QuickBooks Online integration via 31st.ai",
+  "description": "AI bookkeeper with QuickBooks Online integration via DeepLedger",
   "author": {
-    "name": "31st.ai",
-    "url": "https://31st.ai"
+    "name": "DeepLedger",
+    "url": "https://deepledger.ai"
   },
-  "homepage": "https://31st.ai",
-  "repository": "https://github.com/naga-deepledger/31st-ai-plugin",
+  "homepage": "https://deepledger.ai",
+  "repository": "https://github.com/deepledger/deepledger-plugin",
   "license": "MIT",
   "keywords": ["quickbooks", "bookkeeping", "accounting", "finance", "ai-cfo"]
 }
@@ -161,9 +161,9 @@ Example: `mcp__plugin_31st-ai_31st-ai__qbReports`
 ```json
 {
   "mcpServers": {
-    "31st-ai": {
+    "deepledger": {
       "type": "sse",
-      "url": "https://agent.31st.ai/sse"
+      "url": "https://agent.deepledger.ai/sse"
     }
   }
 }
@@ -185,7 +185,7 @@ Example: `mcp__plugin_31st-ai_31st-ai__qbReports`
 ### 4.4 `README.md`
 
 ```markdown
-# 31st.ai Plugin for Claude Code
+# DeepLedger Plugin for Claude Code
 
 AI bookkeeper with QuickBooks Online integration. Record transactions,
 generate financial reports, and get actionable business insights — all
@@ -194,15 +194,15 @@ through natural language.
 ## Installation
 
 ```bash
-git clone https://github.com/naga-deepledger/31st-ai-plugin.git
-claude --plugin-dir ./31st-ai-plugin
+git clone https://github.com/deepledger/deepledger-plugin.git
+claude --plugin-dir ./deepledger-plugin
 ```
 
 ## First Use
 
 1. Start Claude Code with the plugin installed
 2. A browser window opens for authentication
-3. Log in with your 31st.ai account
+3. Log in with your DeepLedger account
 4. Select your organization
 5. Start using QuickBooks tools via natural language
 
@@ -229,7 +229,7 @@ claude --plugin-dir ./31st-ai-plugin
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) installed
-- A 31st.ai account with QuickBooks Online connected
+- A DeepLedger account with QuickBooks Online connected
 ```
 
 ---
@@ -239,7 +239,7 @@ claude --plugin-dir ./31st-ai-plugin
 ```markdown
 ---
 description: Generate P&L report with variance analysis
-allowed-tools: ["mcp__plugin_31st-ai_31st-ai__*"]
+allowed-tools: ["mcp__plugin_deepledger_deepledger__*"]
 argument-hint: [period]
 ---
 
@@ -272,7 +272,7 @@ Steps:
 ```markdown
 ---
 description: Balance sheet snapshot with key ratios
-allowed-tools: ["mcp__plugin_31st-ai_31st-ai__*"]
+allowed-tools: ["mcp__plugin_deepledger_deepledger__*"]
 argument-hint: [date]
 ---
 
@@ -304,7 +304,7 @@ Steps:
 ```markdown
 ---
 description: Cash flow statement and runway analysis
-allowed-tools: ["mcp__plugin_31st-ai_31st-ai__*"]
+allowed-tools: ["mcp__plugin_deepledger_deepledger__*"]
 argument-hint: [period]
 ---
 
@@ -332,7 +332,7 @@ Steps:
 ```markdown
 ---
 description: Record a transaction (expense, bill, invoice, etc.)
-allowed-tools: ["mcp__plugin_31st-ai_31st-ai__*"]
+allowed-tools: ["mcp__plugin_deepledger_deepledger__*"]
 argument-hint: <description of transaction>
 ---
 
@@ -384,7 +384,7 @@ Special rules:
 ```markdown
 ---
 description: AR/AP aging report — who owes you, what you owe
-allowed-tools: ["mcp__plugin_31st-ai_31st-ai__*"]
+allowed-tools: ["mcp__plugin_deepledger_deepledger__*"]
 argument-hint: [receivables|payables|both]
 ---
 
@@ -419,7 +419,7 @@ Steps:
 ```markdown
 ---
 description: Search transactions by vendor, customer, date, or amount
-allowed-tools: ["mcp__plugin_31st-ai_31st-ai__*"]
+allowed-tools: ["mcp__plugin_deepledger_deepledger__*"]
 argument-hint: <search criteria>
 ---
 
@@ -465,7 +465,7 @@ version: 1.0.0
 ## Purpose
 
 Provide bookkeeping expertise for recording QuickBooks Online transactions
-via 31st.ai MCP tools.
+via DeepLedger MCP tools.
 
 ## Operating Framework
 
@@ -1270,7 +1270,7 @@ description: >
   </example>
 model: inherit
 color: green
-tools: ["mcp__plugin_31st-ai_31st-ai__*"]
+tools: ["mcp__plugin_deepledger_deepledger__*"]
 ---
 
 You are an expert bookkeeper. Your role is to record QuickBooks transactions
@@ -1346,7 +1346,7 @@ description: >
   </example>
 model: inherit
 color: cyan
-tools: ["mcp__plugin_31st-ai_31st-ai__*"]
+tools: ["mcp__plugin_deepledger_deepledger__*"]
 ---
 
 You are an experienced CFO providing financial analysis and strategic insights.
@@ -1398,11 +1398,11 @@ Do not use jargon without explaining it.
 
 ```json
 {
-  "description": "31st.ai safety hooks — validate write operations and prevent duplicates",
+  "description": "DeepLedger safety hooks — validate write operations and prevent duplicates",
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "mcp__plugin_31st-ai_31st-ai__qbBill|mcp__plugin_31st-ai_31st-ai__qbExpense|mcp__plugin_31st-ai_31st-ai__qbInvoice|mcp__plugin_31st-ai_31st-ai__qbSalesReceipt|mcp__plugin_31st-ai_31st-ai__qbJournalEntry|mcp__plugin_31st-ai_31st-ai__qbDeposit|mcp__plugin_31st-ai_31st-ai__qbRefundReceipt",
+        "matcher": "mcp__plugin_deepledger_deepledger__qbBill|mcp__plugin_deepledger_deepledger__qbExpense|mcp__plugin_deepledger_deepledger__qbInvoice|mcp__plugin_deepledger_deepledger__qbSalesReceipt|mcp__plugin_deepledger_deepledger__qbJournalEntry|mcp__plugin_deepledger_deepledger__qbDeposit|mcp__plugin_deepledger_deepledger__qbRefundReceipt",
         "hooks": [
           {
             "type": "prompt",
@@ -1412,7 +1412,7 @@ Do not use jargon without explaining it.
         ]
       },
       {
-        "matcher": "mcp__plugin_31st-ai_31st-ai__qbVoidTransaction",
+        "matcher": "mcp__plugin_deepledger_deepledger__qbVoidTransaction",
         "hooks": [
           {
             "type": "prompt",
@@ -1433,9 +1433,9 @@ Do not use jargon without explaining it.
 ### Phase 1: Minimal Plugin (get it working)
 
 ```bash
-mkdir -p 31st-ai-plugin/.claude-plugin
+mkdir -p deepledger-plugin/.claude-plugin
 # Create plugin.json, .mcp.json, .gitignore
-# Test: claude --plugin-dir ./31st-ai-plugin
+# Test: claude --plugin-dir ./deepledger-plugin
 # Verify: OAuth flow works, tools appear in /mcp output
 ```
 
@@ -1490,11 +1490,11 @@ mkdir -p 31st-ai-plugin/.claude-plugin
 
 ```bash
 # Start with the plugin
-claude --plugin-dir /path/to/31st-ai-plugin
+claude --plugin-dir /path/to/deepledger-plugin
 
 # Verify MCP connection
 > /mcp
-# Should show "31st-ai" server with all qb* tools
+# Should show "deepledger" server with all qb* tools
 
 # Test skill trigger
 > "Record an expense for $100 to Amazon"
