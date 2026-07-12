@@ -12,13 +12,14 @@
 ## 1. What This Plugin Is
 
 A Claude Code plugin that connects to the **hosted DeepLedger MCP server**
-(already running at `https://agent.deepledger.ai`) and layers bookkeeping
+(already running at `https://mcp.deepledger.ai/mcp`; note `agent.deepledger.ai`
+is the separate Mastra agent service, not the MCP server) and layers bookkeeping
 intelligence on top. Users install the plugin, authenticate via OAuth, and
 get an AI bookkeeper with zero configuration.
 
 **The plugin contains no server code.** It is a collection of markdown files
 and JSON configs that tells Claude Code:
-1. Where to connect (remote MCP server via SSE)
+1. Where to connect (remote MCP server via Streamable HTTP)
 2. How to authenticate (OAuth 2.1 — handled automatically)
 3. How to use the tools intelligently (skills, agents, commands, hooks)
 
@@ -39,7 +40,7 @@ The DeepLedger MCP server exposes these QuickBooks tools:
 - **qbJournalEntry** — Manual accounting adjustments
 - **qbCredit** — Create vendor/customer credits
 - **qbVoidTransaction** — Void/delete transactions
-- **qbGetUploadUrl** — Get pre-signed upload URL for attaching receipts/documents to QB transactions. WORKFLOW: Call this tool → returns curlCommand. Execute the curlCommand to upload. File is NOT attached until curl runs. "Expense" in QB UI = "Purchase" entityType.
+- **qbAttachFile** — Attach receipts/documents to QB transactions. WORKFLOW: Call this tool → returns curlCommand. Execute the curlCommand to upload and attach in one request. File is NOT attached until curl runs. "Expense" in QB UI = "Purchase" entityType.
 
 The server handles:
 - OAuth 2.1 with PKCE, dynamic client registration, token rotation
@@ -87,9 +88,9 @@ description.
 run before tool execution. `matcher` selects which tools. Prompt-based hooks let
 Claude reason about context. Return 'approve' or 'block'.
 
-**.mcp.json**: Defines MCP server connections. For remote servers use `type: "sse"`
-with a `url`. OAuth is handled automatically by Claude Code when it discovers the
-server's `/.well-known/oauth-authorization-server` endpoint.
+**.mcp.json**: Defines MCP server connections. For remote servers use `type: "http"`
+(Streamable HTTP) with a `url`. OAuth is handled automatically by Claude Code when it
+discovers the server's `/.well-known/oauth-authorization-server` endpoint.
 
 **Tool naming**: When connected via plugin, tools are prefixed:
 `mcp__plugin_<plugin-name>_<server-name>__<tool-name>`
@@ -162,8 +163,8 @@ deepledger-plugin/
 {
   "mcpServers": {
     "deepledger": {
-      "type": "sse",
-      "url": "https://agent.deepledger.ai/sse"
+      "type": "http",
+      "url": "https://mcp.deepledger.ai/mcp"
     }
   }
 }
@@ -515,7 +516,7 @@ For purchases over $5,000 (or organization's threshold), ask:
 | Customer refund | qbRefundReceipt |
 | Adjusting entry | qbJournalEntry |
 | Void/delete transaction | qbVoidTransaction |
-| Attach receipt/document | qbGetUploadUrl |
+| Attach receipt/document | qbAttachFile |
 
 ### Before Recording Payments
 
@@ -1305,7 +1306,7 @@ accurately and completely.
 - Refund → qbRefundReceipt
 - Adjusting entry → qbJournalEntry
 - Cancel transaction → qbVoidTransaction
-- Attach receipt → qbGetUploadUrl
+- Attach receipt → qbAttachFile
 
 **Capitalization Rule:**
 Purchases over $5,000 — ask if it should be a fixed asset or expense.

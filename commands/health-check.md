@@ -15,8 +15,10 @@ Use the **CFO** agent with the **Financial Analysis** skill.
 
 ### Quick Mode (default)
 1. Get all Bank and Credit Card accounts: `qbMasterData(entityType="Account")`
-2. Run `qbAccountHealth` on each account
-3. Present a scorecard:
+2. Assess each account using existing tools:
+   - `qbFetchTransactions` (accountId + date range) — scan for duplicates (same vendor + amount + date within ±3 days) and entries booked to "Uncategorized" or "Ask My Accountant"
+   - `qbReports(reportType="GeneralLedger")` scoped to the account — review the period's activity for outliers (amounts far outside the account's normal range)
+3. Compute a health score per account (start at 100; deduct 5 per high-severity flag, 3 per medium, 1 per low) and present a scorecard:
 
 | Account | Health Score | Uncleared | Duplicates | Uncategorized | Outliers |
 |---------|-------------|-----------|------------|---------------|----------|
@@ -50,7 +52,7 @@ Pending Work: X tasks, Y reviews
 ### Specific Account Mode
 When an account name is given:
 1. Find the account via `qbMasterData`
-2. Run `qbAccountHealth` on just that account
+2. Run the same `qbFetchTransactions` + `qbReports(reportType="GeneralLedger")` checks on just that account
 3. Show detailed breakdown: uncleared items, duplicates, uncategorized, outliers
 4. List specific flagged transactions for investigation
 

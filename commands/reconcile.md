@@ -34,7 +34,7 @@ Run `/bank-feed` to record missing transactions for the period. All unrecorded b
    - `Bill`, `JournalEntry`, `Deposit`, `Expense`, `VendorCredit` **cannot be voided via tools** — flag for CPA to handle directly in QB
 3. Confirm with the user before voiding
 4. `qbVoidTransaction` if supported and confirmed
-5. Re-run `qbAccountHealth` to verify the flag is cleared
+5. Re-run the health check (`/health-check <account name>`) to verify the flag is cleared
 
 #### Step 4 — Resolve Uncategorized Flags
 1. `qbFetchTransactions` — find entries booked to "Ask My Accountant" or "Uncategorized"

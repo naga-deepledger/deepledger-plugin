@@ -41,7 +41,7 @@ This creates the close run in the portal and sets status to `in_progress`.
 ## Step 1: Reconcile All Accounts
 
 1. **Get accounts** — `qbMasterData(entityTypes=["account"])` → Bank and Credit Card types
-2. **Health check** — `qbAccountHealth` on each account for the closing month
+2. **Health check** — for each account, scan the closing month with `qbFetchTransactions` (duplicates, uncategorized entries) and `qbReports(reportType="GeneralLedger")` (outliers)
 3. **Target** — All accounts >= 90 health score
 4. **Resolve** — Fix duplicates, categorize uncategorized items, investigate outliers
 5. **Update portal**:
@@ -69,7 +69,7 @@ This creates the close run in the portal and sets status to `in_progress`.
    - Accrued expenses: Debit Expense, Credit Accrued Liabilities
    - Prepaid amortization: Debit Expense, Credit Prepaid Asset
    - Deferred revenue: Debit Deferred Revenue, Credit Revenue
-3. **Batch** — Use `qbBatch` for multiple JEs
+3. **One at a time** — there is no batch tool; create each journal entry with its own `qbJournalEntry` call
 4. **Status** — Proposed entries get `status: "proposed"` — CPA approves in portal before posting
 5. **Update portal**:
    ```

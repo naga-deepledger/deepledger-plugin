@@ -75,15 +75,15 @@ For each transaction:
    - "Description is ambiguous: [description]"
 2. Include `suggestedCategory` when you have a reasonable guess
 
-### Step 4: Batch When Possible
+### Step 4: Handling Multiple Transactions
 
-When 3+ transactions share the same type and source account:
+There is no batch tool — each transaction is recorded with its own tool call. When 3+ transactions share the same type and source account, save round-trips on the lookups:
 1. Group by transaction type (Expense, Deposit, etc.)
 2. Run one `qbMasterData` lookup for all vendor/customer IDs
 3. Run one `qbFetchTransactions` duplicate check covering the full date range
-4. Submit via `qbBatch`
-5. Check response for per-item success/failure
-6. Retry failed items individually
+4. Record each transaction individually with the appropriate tool (`qbExpense`, `qbDeposit`, etc.)
+5. Track per-item success/failure
+6. Retry failed items; do not let one failure stop the rest
 
 ### Step 5: Report Summary
 

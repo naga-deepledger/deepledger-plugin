@@ -101,7 +101,7 @@ Note: The `complete` operation sets status to `needs_review` — only a CPA can 
 
 ### Step 1: Reconcile All Accounts
 - `qbMasterData(entityType="Account")` → get all Bank and Credit Card accounts
-- `qbAccountHealth` on each account for the closing month
+- Health-check each account for the closing month: `qbFetchTransactions` (accountId + month range) to scan for duplicates and uncategorized entries, plus `qbReports(reportType="GeneralLedger")` for outliers (see `/health-check` scoring)
 - Report health scores. Target: >= 90 on all accounts
 - If any account < 90, investigate and resolve issues before continuing
 - **Update close_runs**: Set step `reconciliation` status + update checks 7 (Bank Reconciliation)
@@ -118,7 +118,7 @@ Note: The `complete` operation sets status to `needs_review` — only a CPA can 
   - Accrued expenses: Debit Expense, Credit Accrued Liabilities
   - Prepaid amortization: Debit Expense, Credit Prepaid Asset
   - Deferred revenue recognition as appropriate
-- Use `qbBatch` for multiple JEs
+- There is no batch tool — create each journal entry with its own `qbJournalEntry` call
 - **Update close_runs**: Set step `accruals` status + add to `adjusting_entries` array + update checks 11 (Prepaid), 13 (Accruals)
 - Proposed entries should have `status: "proposed"` — wait for CPA approval in portal before posting
 

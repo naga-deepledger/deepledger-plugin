@@ -39,11 +39,11 @@ Gather work from three sources (in priority order):
 1. **CPA-approved reviews** (highest priority, safest):
    `fetchWorkQueue(source="approvedReviews")`
 
-2. **Scheduled AI tasks**:
-   `fetchWorkQueue(source="tasks")`
+2. **Unprocessed bank feed**:
+   `bankFeed(action="fetch")` — skip items with `alreadyFlagged=true`
 
-3. **Unprocessed bank feed**:
-   `bankFeed(action="fetch")`
+3. **In-progress month-end close** (started from the portal):
+   `closeRun(operation="read")`
 
 If zero pending items across all sources, update worklog to `status="completed"` and exit.
 
@@ -77,7 +77,7 @@ After completing this step, update worklog: `lastCompletedStep="analyze"`
 4. Mark as recorded
 
 **Always** follow write safety: lookup → duplicate check → record.
-Use `qbBatch` when recording 3+ similar transactions.
+There is no batch tool — record each transaction individually with the appropriate tool (`qbExpense`, `qbBill`, etc.).
 
 **Error handling for individual transactions:**
 - If a single transaction fails, log the error in worklog `failedItems[]` and continue with the next
@@ -108,7 +108,7 @@ After processing:
 After completing this step, update worklog: `lastCompletedStep="learn"`
 
 ### Step 7: AUDIT & REPORT — Health Check
-1. `qbAccountHealth` on all active bank/CC accounts
+1. Health-check all active bank/CC accounts: `qbFetchTransactions` (duplicates, uncategorized entries) plus `qbReports(reportType="GeneralLedger")` for outliers (see `/health-check` scoring)
 2. Update worklog: `status="completed"`, final counts, timestamp
 3. Compare health scores to previous cycle
 4. Present cycle summary:

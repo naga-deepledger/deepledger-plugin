@@ -23,7 +23,7 @@ Activate when the user wants to:
 
 | Capability | How |
 |------------|-----|
-| Flag duplicates, uncategorized, outliers, past-due | `qbAccountHealth` |
+| Flag duplicates, uncategorized, outliers, past-due | `qbFetchTransactions` + `qbReports(reportType="GeneralLedger")` |
 | Fetch unprocessed bank transactions to record | `bankFeed` |
 | Investigate specific transactions | `qbFetchTransactions` |
 | Void supported transaction types | `qbVoidTransaction` |
@@ -36,13 +36,13 @@ Activate when the user wants to:
 Run this first to find what needs fixing before touching the reconciliation screen.
 
 1. **Get accounts** — `qbMasterData(entityTypes=["account"])` → filter for Bank and Credit Card types
-2. **Run health check** — `qbAccountHealth(accountId, startDate, endDate)` on each account
-3. **Review flags**:
+2. **Run health check** — for each account, pull the period's activity with `qbFetchTransactions` (accountId + date range) and `qbReports(reportType="GeneralLedger")`
+3. **Review for flags**:
    - **Duplicates** — same amount + date + vendor; high severity if > $1,000
    - **Uncategorized** — booked to "Ask My Accountant" or "Uncategorized"; high if > $500
    - **Outliers** — amount exceeds 2 standard deviations from mean
    - **Past-due** — transactions with `dueDate` older than 7 days (checks `dueDate` field, not QB cleared status)
-4. **Score** — 0–100. Penalty: high = -5, medium = -3, low = -1
+4. **Score** — compute 0–100 per account. Penalty: high = -5, medium = -3, low = -1
 
 ### Score Thresholds
 
@@ -81,7 +81,7 @@ Run this first to find what needs fixing before touching the reconciliation scre
 3. **Check voidable type** — `qbVoidTransaction` supports: `BillPayment`, `Invoice`, `Payment`, `SalesReceipt`, `CreditMemo`, `Purchase`, `RefundReceipt`, `Transfer`
    - `Bill`, `JournalEntry`, `Deposit`, `Expense`, `VendorCredit` cannot be voided via tools — flag for CPA to handle in QB
 4. **Confirm with user** before voiding — preserves audit trail, unlike delete
-5. **Re-run** `qbAccountHealth` to verify the flag is cleared
+5. **Re-run** the health check (`qbFetchTransactions` scan) to verify the flag is cleared
 
 ## Workflow: Resolve Uncategorized Flags
 
@@ -110,7 +110,7 @@ Once the health score is clean and all bank feed items are recorded:
 
 ## Safety Checklist
 
-- [ ] `qbAccountHealth` run and flags resolved before opening reconciliation screen
+- [ ] Health check run (`qbFetchTransactions` + `qbReports`) and flags resolved before opening reconciliation screen
 - [ ] Bank feed processed — no unrecorded transactions remaining for the period
 - [ ] Duplicate check completed before recording any bank feed item
 - [ ] Voidable transaction type confirmed before calling `qbVoidTransaction`

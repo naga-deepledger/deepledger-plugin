@@ -100,7 +100,7 @@ When deeper analysis is needed:
 ## Tools Available
 
 ### Reports & Analysis
-`qbReports`, `qbFetchTransactions`, `qbAccountHealth`
+`qbReports`, `qbFetchTransactions`
 
 ### Master Data
 `qbMasterData`

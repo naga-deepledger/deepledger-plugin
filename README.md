@@ -6,7 +6,7 @@ Claude Code plugin for autonomous AI bookkeeping and financial analysis powered 
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed
 - A DeepLedger account with QuickBooks connected via the [portal](https://deepledger.ai)
-- MCP server running at `https://deepledger-mcp.onrender.com/mcp`
+- MCP server running at `https://mcp.deepledger.ai/mcp`
 
 ## Setup
 
@@ -15,7 +15,7 @@ Claude Code plugin for autonomous AI bookkeeping and financial analysis powered 
 claude --plugin-dir ./deepledger-plugin
 ```
 
-The plugin connects to the DeepLedger MCP server using HTTP Streamable transport. Authentication is handled via Supabase Bearer tokens — you'll be prompted to authenticate on first use.
+The plugin connects to the DeepLedger MCP server using Streamable HTTP transport. On first use, Claude Code discovers the server's OAuth 2.1 (PKCE) endpoints and opens a browser login — sign in with your DeepLedger account and the connection is authorized automatically. The server also accepts DeepLedger API keys (`dl_live_...`) and Supabase session JWTs as Bearer tokens for programmatic access.
 
 ## Quick Start
 
@@ -47,6 +47,11 @@ The plugin connects to the DeepLedger MCP server using HTTP Streamable transport
 | `/bank-feed` | Process unrecorded bank/CC transactions |
 | `/find <query>` | Search transactions, vendors, customers, accounts |
 | `/transfer <amount> from A to B` | Transfer between own bank accounts |
+| `/ap [bill\|pay\|credit\|aging]` | Manage accounts payable — bills, payments, vendor credits |
+| `/ar [invoice\|payment\|deposit]` | Manage accounts receivable — invoices, payments, deposits |
+| `/attach <txn> <document>` | Attach a receipt/document to an existing QB transaction |
+| `/void <transaction>` | Void a transaction (preserves the audit trail) |
+| `/reconcile [account]` | Reconcile a bank or credit card account |
 | `/pnl [period]` | Profit & Loss report |
 | `/balance-sheet [date]` | Balance Sheet report |
 | `/cash-flow [period]` | Cash Flow Statement |
@@ -54,7 +59,6 @@ The plugin connects to the DeepLedger MCP server using HTTP Streamable transport
 | `/close-books [month]` | Month-end close workflow |
 | `/health-check [--detailed]` | Financial health scorecard |
 | `/loop` | Autonomous bookkeeping cycle |
-| `/budget [period]` | Budget vs actuals comparison |
 | `/recurring [list\|create\|pause]` | Manage recurring transactions |
 
 ## Agents
@@ -72,9 +76,10 @@ Every QuickBooks write operation is protected by a 3-step protocol enforced via 
 
 Additional guards:
 - Void operations require fetching transaction details first
-- Batch operations require master data lookup
 - Bank feed flags must include `aiReasoning` for the CPA
 - Journal entries get a debit = credit reminder
+
+There is no batch tool — every transaction is recorded individually with the appropriate tool (`qbExpense`, `qbBill`, etc.), so each write passes through the full safety protocol.
 
 ## Agent Memory
 
@@ -114,11 +119,11 @@ The upvote system drives confidence-based decisions:
 Plugin (this repo)
   ├── agents/     → Accountant + CFO personas
   ├── skills/     → Bookkeeping + Financial Analysis expertise
-  ├── commands/   → 15 user-facing slash commands
+  ├── commands/   → 18 user-facing slash commands
   └── hooks/      → Safety validation guards
-  ↓ HTTP Streamable
-MCP Server (deepledger-mcp on Render)
-  ├── 20+ QuickBooks tools
+  ↓ Streamable HTTP
+MCP Server (deepledger-mcp, hosted on Render at https://mcp.deepledger.ai/mcp)
+  ├── 24 tools (17 QuickBooks + 7 platform)
   ├── Agent infrastructure (work queue, memory, documents, bank feed)
   └── Supabase PostgreSQL backend
 ```

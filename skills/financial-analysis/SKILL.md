@@ -18,16 +18,24 @@ Activate this skill when the user wants to:
 | Report | Tool Call | Purpose |
 |--------|-----------|---------|
 | Profit & Loss | `qbReports(reportType="ProfitAndLoss")` | Revenue, expenses, net income |
+| P&L by Class | `qbReports(reportType="ProfitAndLossByClass")` | P&L with one column per class |
 | P&L Detail | `qbReports(reportType="ProfitAndLossDetail")` | Transaction-level drill-down |
 | Balance Sheet | `qbReports(reportType="BalanceSheet")` | Assets, liabilities, equity |
 | Cash Flow | `qbReports(reportType="CashFlow")` | Operating, investing, financing flows |
 | Aged Receivables | `qbReports(reportType="AgedReceivables")` | Who owes you, how overdue |
+| Aged Receivables Detail | `qbReports(reportType="AgedReceivablesDetail")` | Invoice-level AR aging |
 | Aged Payables | `qbReports(reportType="AgedPayables")` | What you owe, when due |
+| Aged Payables Detail | `qbReports(reportType="AgedPayablesDetail")` | Bill-level AP aging |
 | Trial Balance | `qbReports(reportType="TrialBalance")` | All accounts, debits = credits |
 | Sales by Customer | `qbReports(reportType="SalesByCustomer")` | Revenue by customer |
 | Customer Income | `qbReports(reportType="CustomerIncome")` | Customer profitability |
+| Customer Balance | `qbReports(reportType="CustomerBalance")` | Total AR owed per customer |
 | Sales by Product | `qbReports(reportType="SalesByProduct")` | Product/service revenue |
 | Vendor Expenses | `qbReports(reportType="VendorExpenses")` | Spending by vendor |
+| Vendor Balance | `qbReports(reportType="VendorBalance")` | Total AP owed per vendor |
+| Transaction List | `qbReports(reportType="TransactionList")` | All transactions in a period |
+| General Ledger | `qbReports(reportType="GeneralLedger")` | Per-account transaction history |
+| Budget vs Actuals | `qbReports(reportType="BudgetVsActuals")` | Actual vs budget vs variance per account |
 
 ## Workflow: Full Financial Analysis
 
@@ -88,7 +96,7 @@ Flag these conditions:
 - DSO increasing month-over-month
 - Cash runway < 3 months
 
-Use `qbAccountHealth` to detect statistical outliers automatically.
+Use `qbReports(reportType="GeneralLedger")` or `qbFetchTransactions` on the relevant accounts to spot statistical outliers (amounts far outside the account's normal range).
 
 ### Step 6: Synthesize & Present
 
@@ -114,7 +122,7 @@ Save key insights to `agentMemory` for longitudinal tracking.
 ## Health Check Quick Mode
 
 For a fast health check:
-1. `qbAccountHealth` on all bank + CC accounts
+1. Scan all bank + CC accounts with `qbFetchTransactions` (duplicates, uncategorized entries) and `qbReports(reportType="GeneralLedger")` (outliers)
 2. `qbReports(reportType="ProfitAndLoss")` for current month
 3. `qbReports(reportType="AgedReceivables")` for overdue AR
 4. `qbReports(reportType="AgedPayables")` for upcoming AP

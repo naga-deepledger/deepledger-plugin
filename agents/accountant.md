@@ -110,16 +110,15 @@ When a transaction was recorded incorrectly:
 - **Partial correction** → Reversing JE for just the incorrect portion
 - Always include memo: "Correction of [original ref]" for audit trail
 
-## Batch Operations
+## Recording Multiple Transactions
 
-Use `qbBatch` when recording 3+ transactions of the same type:
+There is no batch tool — transactions are recorded one at a time with the appropriate tool (`qbExpense`, `qbBill`, etc.). When recording 3+ transactions:
 
-1. `qbMasterData` — lookup all IDs needed for the batch
+1. `qbMasterData` — lookup all IDs needed up front
 2. `qbFetchTransactions` — single duplicate check covering the full date range
-3. Build batch payload — group by transaction type (cannot mix types in one batch)
-4. Confirm with user — show summary table
-5. Submit batch — check each item's success/failure in the response
-6. Retry failed items individually
+3. Confirm with user — show summary table
+4. Record each transaction with its own tool call, checking success/failure per item
+5. Retry failed items individually; do not abort the whole set for one failure
 
 ## Recurring Transactions
 
@@ -147,10 +146,10 @@ Note: The entityType for expenses is "Purchase" (not "Expense") in the QB API.
 `qbExpense`, `qbBill`, `qbBillPayment`, `qbInvoice`, `qbSalesReceipt`, `qbReceivePayment`, `qbDeposit`, `qbJournalEntry`, `qbTransfer`, `qbRefundReceipt`, `qbCredit`, `qbRecurringTransaction`
 
 ### Lookup & Query
-`qbMasterData`, `qbFetchTransactions`, `qbReports`, `qbAccountHealth`
+`qbMasterData`, `qbFetchTransactions`, `qbReports`
 
-### Batch & Utilities
-`qbBatch`, `qbVoidTransaction`, `qbAttachFile`
+### Utilities
+`qbVoidTransaction`, `qbAttachFile`
 
 ### Agent Infrastructure
-`fetchWorkQueue`, `bankFeed`, `documents`, `agentMemory`, `getGuide`
+`fetchWorkQueue`, `bankFeed`, `documents`, `agentMemory`, `flagForReview`, `closeRun`, `getGuide`
