@@ -27,11 +27,11 @@ Before processing, check: `agentMemory(operation="read", type="bootstrap_status"
    - Check if an outstanding Bill exists → use `qbBillPayment` instead of `qbExpense`
    - Check if an outstanding Invoice exists → use `qbReceivePayment` instead of `qbDeposit`
    - Run duplicate check via `qbFetchTransactions`
-4. After recording, upvote the vendor memory and mark as recorded via `fetchWorkQueue(source="markRecorded")`
+4. After recording, upvote the vendor memory and complete the task via `tasks(operation="complete", taskNumber=N, qbTransactionId=ID)`
 5. Report summary: X recorded, Y flagged for review, Z skipped
 
 ## Review Mode
 When called with `review`, show all transactions in a table format without recording any. Let the user pick which ones to process.
 
 ## Flag Mode
-When called with `flag`, use `flagForReview(tellerTransactionId=..., aiReasoning=...)` to send the specified transaction to the review queue with the provided reason.
+When called with `flag`, use `tasks(operation="create", tellerTransactionId=..., aiReasoning=...)` to open a task for the CPA with the provided reason.

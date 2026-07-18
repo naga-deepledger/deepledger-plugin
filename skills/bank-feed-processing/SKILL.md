@@ -61,14 +61,14 @@ For each transaction:
 1. `qbMasterData` — lookup IDs
 2. Record with the top-voted account mapping
 3. `agentMemory` — upvote the mapping
-4. `fetchWorkQueue(source="markRecorded")` — prevent re-processing
+4. `tasks(operation="complete", taskNumber, qbTransactionId)` — prevent re-processing
 
 **Medium confidence (3-4 upvotes):**
 1. Same as high, but include a note in the response about the categorization
 2. Upvote on success
 
 **Low/No confidence:**
-1. `flagForReview` with specific `aiReasoning`:
+1. `tasks(operation="create")` with specific `aiReasoning`:
    - "New vendor not in memory"
    - "Amount $X is 3x the usual $Y for this vendor"
    - "Multiple possible categories: [list]"
@@ -113,16 +113,16 @@ When the user wants to see transactions before recording:
 When the user wants to flag a particular transaction:
 
 1. Identify the transaction by description, amount, or date
-2. `flagForReview(tellerTransactionId=..., aiReasoning=...)` with the user's reason
+2. `tasks(operation="create", tellerTransactionId=..., aiReasoning=...)` with the user's reason
 3. Confirm: "Flagged for CPA review with reason: [reason]"
 
 ## Workflow: Process CPA-Approved Items
 
-CPA-approved items from the review queue take priority:
+CPA-approved tasks take priority:
 
-1. `fetchWorkQueue(source="approvedReviews")` — get approved items
+1. `tasks(operation="list")` — get open tasks assigned to the AI agent
 2. Record using the `effectiveCategory` from the CPA's approval
-3. Mark recorded: `fetchWorkQueue(source="markRecorded", reviewItemNumber=N, qbTransactionId=ID)`
+3. Complete: `tasks(operation="complete", taskNumber=N, qbTransactionId=ID)`
 4. **Never override** a CPA-approved category with agent judgment
 
 ## Safety Checklist
@@ -139,7 +139,7 @@ CPA-approved items from the review queue take priority:
 
 - Recording an expense when an outstanding bill exists for the same vendor → use BillPayment
 - Recording a deposit when an outstanding invoice exists → use ReceivePayment
-- Skipping the bootstrap check → floods the review queue with flags
+- Skipping the bootstrap check → floods the CPA task list with escalations
 - Not marking transactions as recorded → they appear again in the next fetch
 - Overriding a CPA-approved category with a different agent guess
 - Ignoring amount anomalies just because the vendor has high upvotes

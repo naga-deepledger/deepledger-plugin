@@ -175,7 +175,7 @@ agentMemory(operation="write", type="client", data={
 })
 ```
 
-**Upvote cap: 5.** Even if a vendor appeared 50 times, the bootstrap caps at 5. The agent must earn higher confidence through real-time usage. This protects against historical miscategorizations — a CPA correction in the review queue can still override a bootstrap mapping.
+**Upvote cap: 5.** Even if a vendor appeared 50 times, the bootstrap caps at 5. The agent must earn higher confidence through real-time usage. This protects against historical miscategorizations — a CPA correction on a task can still override a bootstrap mapping.
 
 ### Step 6: MARK — Record Bootstrap Completion
 

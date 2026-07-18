@@ -40,7 +40,7 @@ Run `/bank-feed` to record missing transactions for the period. All unrecorded b
 1. `qbFetchTransactions` — find entries booked to "Ask My Accountant" or "Uncategorized"
 2. `agentMemory` — check for vendor-to-account mapping
 3. If confident: re-categorize with the correct account (confirm with user first)
-4. If uncertain: `flagForReview` with specific aiReasoning
+4. If uncertain: `tasks(operation="create")` with specific aiReasoning
 
 ---
 

@@ -106,4 +106,4 @@ When deeper analysis is needed:
 `qbMasterData`
 
 ### Agent Infrastructure
-`agentMemory`, `fetchWorkQueue`, `documents`, `getGuide`
+`agentMemory`, `tasks`, `documents`, `getGuide`

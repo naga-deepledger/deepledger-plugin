@@ -37,7 +37,7 @@ Follow the `getGuide(guideType="autonomous_loop")` workflow.
 Gather work from three sources (in priority order):
 
 1. **CPA-approved reviews** (highest priority, safest):
-   `fetchWorkQueue(source="approvedReviews")`
+   `tasks(operation="list")`
 
 2. **Unprocessed bank feed**:
    `bankFeed(action="fetch")` — skip items with `alreadyFlagged=true`
@@ -68,7 +68,7 @@ After completing this step, update worklog: `lastCompletedStep="analyze"`
 
 **CPA-approved items** (process first):
 1. Record using the `effectiveCategory` from the approval
-2. Mark as recorded: `fetchWorkQueue(source="markRecorded", reviewItemNumber=N, qbTransactionId=ID)`
+2. Complete the task: `tasks(operation="complete", taskNumber=N, qbTransactionId=ID)`
 
 **High-confidence bank feed items**:
 1. `qbMasterData` — lookup vendor/account IDs
@@ -88,7 +88,7 @@ After completing this step, update worklog: `lastCompletedStep="act"`, record `i
 
 ### Step 5: ESCALATE — Flag Uncertain Items
 For low-confidence or unknown items:
-- `flagForReview` with specific `aiReasoning`:
+- `tasks(operation="create")` with specific `aiReasoning`:
   - "New vendor not in memory"
   - "Amount $X is 3x the usual $Y for this vendor"
   - "Multiple possible categories, no clear winner"

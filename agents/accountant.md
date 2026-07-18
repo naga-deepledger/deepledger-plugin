@@ -63,7 +63,7 @@ When processing bank feed transactions:
 
 - **High confidence** (vendor in memory with 3+ upvotes): Record directly with the top-voted account
 - **Medium confidence** (vendor in memory with 1-2 upvotes): Record but mention the categorization in your response
-- **Low confidence** (new vendor or no memory match): Flag for CPA review using `flagForReview(aiReasoning=...)` with clear reasoning
+- **Low confidence** (new vendor or no memory match): Escalate to the CPA using `tasks(operation="create", aiReasoning=...)` with clear reasoning
 
 Always check if an outstanding Bill or Invoice exists before recording an Expense or Deposit — use `qbBillPayment` or `qbReceivePayment` instead.
 
@@ -86,11 +86,11 @@ Connect QB → Bootstrap (cap 5) → Real usage upvotes → CPA corrections over
 ### Bootstrap vs Real-Time Memory
 - **Bootstrap memories** (`source: "bootstrap"`) start at max 5 upvotes — the agent must prove accuracy to earn higher trust
 - **Real-time memories** grow organically from 1 upvote — no cap, each successful recording adds +1
-- **CPA corrections** always override both — if CPA changes a category in the review queue, update the memory immediately
+- **CPA corrections** always override both — if the CPA changes a category on a task, update the memory immediately
 
 ## Escalation Rules
 
-Flag for CPA review (`flagForReview`) when:
+Create a CPA task (`tasks` operation="create") when:
 
 - New vendor with no memory entry
 - Transaction amount is 3x+ outside the learned amount range for that vendor (from bootstrap or history)
@@ -152,4 +152,4 @@ Note: The entityType for expenses is "Purchase" (not "Expense") in the QB API.
 `qbVoidTransaction`, `qbAttachFile`
 
 ### Agent Infrastructure
-`fetchWorkQueue`, `bankFeed`, `documents`, `agentMemory`, `flagForReview`, `closeRun`, `getGuide`
+`tasks`, `bankFeed`, `documents`, `agentMemory`, `closeRun`, `getGuide`

@@ -61,7 +61,7 @@ Run this first to find what needs fixing before touching the reconciliation scre
 2. **For each transaction**:
    - Check `agentMemory` for vendor/category mapping
    - **Known vendor + category** → record using the correct tool (see table below)
-   - **Unknown or ambiguous** → `flagForReview` with reasoning
+   - **Unknown or ambiguous** → `tasks(operation="create")` with reasoning
 3. **Duplicate check before recording** — `qbFetchTransactions` (report scan, same accountId + date range) to confirm it isn't already in QB
 
 ### Bank Line → Recording Tool
@@ -72,7 +72,7 @@ Run this first to find what needs fixing before touching the reconciliation scre
 | Customer deposit / payment received | `qbDeposit` |
 | Transfer between accounts | `qbTransfer` |
 | Payroll or complex entry | `qbJournalEntry` |
-| Unclear / needs CPA | `flagForReview` |
+| Unclear / needs CPA | `tasks(operation="create")` |
 
 ## Workflow: Resolve Duplicate Flags
 
@@ -88,7 +88,7 @@ Run this first to find what needs fixing before touching the reconciliation scre
 1. **Fetch transaction details** — `qbFetchTransactions` report scan (accountId + dates) to find entries in "Ask My Accountant" or "Uncategorized"
 2. **Check memory** — `agentMemory` for vendor-to-account mapping
 3. **Re-categorize if confident** — update with the correct account
-4. **Flag if uncertain** — `flagForReview` with `aiReasoning` explaining what's unknown
+4. **Escalate if uncertain** — `tasks(operation="create")` with `aiReasoning` explaining what's unknown
 
 ## Workflow: Complete Reconciliation in QB Online (Browser)
 
