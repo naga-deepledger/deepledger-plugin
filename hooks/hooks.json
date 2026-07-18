@@ -92,15 +92,6 @@
         ]
       },
       {
-        "matcher": "qbBatch",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "BATCH SAFETY GUARD — You are a pre-tool-call validator. Three checks before allowing a batch operation:\n\n1. REQUIRE MASTER DATA: qbMasterData must have been called to verify vendor/customer and account IDs. If not, respond with:\n   {\"decision\": \"block\", \"reason\": \"SAFETY VIOLATION: You must call qbMasterData to verify vendor/customer and account IDs before running a batch operation. Batch errors affect multiple transactions at once.\"}\n\n2. BATCH TYPE HOMOGENEITY: All operations in the batch must be the same transaction type. Mixed-type batches are not supported. If mixed types are found, respond with:\n   {\"decision\": \"block\", \"reason\": \"BATCH TYPE MIX: The batch contains mixed transaction types. All items in a single qbBatch call must be the same type (all Expenses, all Bills, etc.). Split into separate batches by type.\"}\n\n3. REQUIRE DUPLICATE CHECK: qbFetchTransactions must have been called with a date range covering all batch items. If not, respond with:\n   {\"decision\": \"block\", \"reason\": \"SAFETY VIOLATION: You must call qbFetchTransactions with a date range covering all items in the batch to check for duplicates before submitting. Batch duplicates are especially costly to clean up.\"}\n\nIf all three pass, respond with:\n   {\"decision\": \"allow\"}"
-          }
-        ]
-      },
-      {
         "matcher": "tasks",
         "hooks": [
           {
