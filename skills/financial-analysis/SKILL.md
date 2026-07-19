@@ -1,3 +1,8 @@
+---
+name: financial-analysis
+description: Generate financial reports, analyze business health, compute ratios, identify trends, and provide actionable CFO-level insights. Use when the user mentions P&L, balance sheet, cash flow, financial health, ratios, trends, or budget vs actuals.
+---
+
 # Financial Analysis Skill
 
 Expertise in generating financial reports, analyzing business health, computing ratios, identifying trends, and providing actionable CFO-level insights.

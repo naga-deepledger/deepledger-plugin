@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0] - 2026-07-18
+
+### Removed
+- **All 18 slash commands** and **both agents** (Accountant, CFO) — the plugin is now skills + hooks + the DeepLedger MCP connector only. Natural-language requests trigger the matching skill directly; the commands duplicated what the skills already cover.
+
+### Fixed
+- **financial-analysis skill**: added the missing YAML frontmatter (name + description) so the skill is actually discoverable.
+
+### Changed
+- README rewritten around skills-first usage; architecture section updated to the current server tool set (23 tools).
+
 ## [1.3.0] - 2026-04-01
 
 ### Changed

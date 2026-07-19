@@ -5,7 +5,7 @@ description: Manage accounts payable — enter bills, pay vendors, apply vendor 
 
 # Accounts Payable Skill
 
-Manage the full AP lifecycle: entering vendor bills, scheduling and making payments, applying vendor credits, and monitoring what you owe.
+Manage the full AP lifecycle: entering vendor bills, recording payments, applying vendor credits, and monitoring what you owe.
 
 ## Trigger
 

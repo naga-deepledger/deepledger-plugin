@@ -2,6 +2,8 @@
 
 Claude Code plugin for autonomous AI bookkeeping and financial analysis powered by QuickBooks Online.
 
+The plugin is intentionally lean: **skills** (bookkeeping expertise that triggers on natural language), **hooks** (safety guards on every QuickBooks write), and the **DeepLedger MCP connector**. No slash commands or custom agents — just describe what you need.
+
 ## Prerequisites
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed
@@ -19,52 +21,40 @@ The plugin connects to the DeepLedger MCP server using Streamable HTTP transport
 
 ## Quick Start
 
-```bash
-# 1. Bootstrap — learn from existing QB history (run once per client)
-/bootstrap
+Just ask in plain language — the matching skill activates automatically:
 
-# 2. Process bank feed — agent already knows your vendors
-/bank-feed
+```
+# 1. Onboard a new client — learn from existing QB history (run once per client)
+"Bootstrap this client from their QuickBooks history"
+
+# 2. Process the bank feed — agent already knows your vendors
+"Process the bank feed"
 
 # 3. Record a transaction
-/record Paid $500 to Office Depot for office supplies with company credit card
+"Record: paid $500 to Office Depot for office supplies with the company credit card"
 
-# 4. Generate a P&L
-/pnl
+# 4. Reports and analysis
+"Generate a P&L for last month and compare it to the prior month"
 
-# 5. Run the autonomous bookkeeping loop
-/loop
+# 5. Month-end close
+"Close the books for June"
 ```
 
-> **First time?** Always run `/bootstrap` first. It reads your existing QuickBooks transactions and learns vendor/account mappings so the agent is accurate from day one. Without it, every vendor is unknown and gets flagged for CPA review.
+> **First time?** Always onboard the client first (client-onboarding skill). It reads existing QuickBooks transactions and learns vendor/account patterns so the agent is accurate from day one. Without it, every vendor is unknown and gets flagged for CPA review.
 
-## Commands
+## Skills
 
-| Command | Description |
-|---------|-------------|
-| `/bootstrap` | Learn from existing QB history (run once per client) |
-| `/record <description>` | Record a financial transaction |
-| `/bank-feed` | Process unrecorded bank/CC transactions |
-| `/find <query>` | Search transactions, vendors, customers, accounts |
-| `/transfer <amount> from A to B` | Transfer between own bank accounts |
-| `/ap [bill\|pay\|credit\|aging]` | Manage accounts payable — bills, payments, vendor credits |
-| `/ar [invoice\|payment\|deposit]` | Manage accounts receivable — invoices, payments, deposits |
-| `/attach <txn> <document>` | Attach a receipt/document to an existing QB transaction |
-| `/void <transaction>` | Void a transaction (preserves the audit trail) |
-| `/reconcile [account]` | Reconcile a bank or credit card account |
-| `/pnl [period]` | Profit & Loss report |
-| `/balance-sheet [date]` | Balance Sheet report |
-| `/cash-flow [period]` | Cash Flow Statement |
-| `/aging [ar\|ap]` | Aged Receivables / Payables |
-| `/close-books [month]` | Month-end close workflow |
-| `/health-check [--detailed]` | Financial health scorecard |
-| `/loop` | Autonomous bookkeeping cycle |
-| `/recurring [list\|create\|pause]` | Manage recurring transactions |
-
-## Agents
-
-- **Accountant** — Day-to-day bookkeeping: transaction recording, bank feed processing, reconciliation, month-end close
-- **CFO** — Strategic analysis: financial reports, ratio analysis, trend identification, health monitoring
+| Skill | What it covers |
+|-------|----------------|
+| `client-onboarding` | Bootstrap a new client by learning from historical QuickBooks data |
+| `bank-feed-processing` | Categorize, match, record, or flag bank feed transactions |
+| `bank-reconciliation` | Reconcile bank/CC accounts, fix duplicates and uncategorized items |
+| `accounts-payable` | Bills, vendor payments, vendor credits, AP aging |
+| `accounts-receivable` | Invoices, customer payments, credits, AR aging, collections |
+| `journal-entries` | Journal entries, adjusting entries, transfers, corrections |
+| `master-data` | Chart of accounts, vendors, customers, items, classes, tax rates |
+| `month-end-close` | Full close workflow with the 16-point checklist |
+| `financial-analysis` | Reports, ratios, trends, CFO-level insights |
 
 ## Safety Model
 
@@ -75,9 +65,11 @@ Every QuickBooks write operation is protected by a 3-step protocol enforced via 
 3. **Confirm** — Explicit user confirmation before writing
 
 Additional guards:
-- Void operations require fetching transaction details first
-- Bank feed flags must include `aiReasoning` for the CPA
-- Journal entries get a debit = credit reminder
+- Transaction-type guards catch wrong-tool writes (Expense vs BillPayment, Deposit vs ReceivePayment, Invoice vs SalesReceipt)
+- Vendor/account IDs are cross-referenced against the latest `qbMasterData` results to catch hallucinated IDs
+- Journal entries are hard-blocked unless debits equal credits
+- Void operations require fetching and verifying transaction details first
+- CPA escalations (`tasks` create) must include specific `aiReasoning`
 
 There is no batch tool — every transaction is recorded individually with the appropriate tool (`qbExpense`, `qbBill`, etc.), so each write passes through the full safety protocol.
 
@@ -96,7 +88,7 @@ Memory naming: `{type}_{clientName}_{entityName}` (e.g., `vendor_acme_office-dep
 
 ### Bootstrap (First-Time Learning)
 
-When a new client connects QuickBooks, `/bootstrap` reads the last 12 months of transactions and seeds memory automatically:
+When a new client connects QuickBooks, the client-onboarding skill reads the last 12 months of transactions and seeds memory automatically:
 - Extracts vendor → account, customer → income, recurring patterns, transfer routes
 - Caps every mapping at **5 upvotes** — the agent must earn higher trust through real-time accuracy
 - Shows the full summary to the CPA for review before activating
@@ -104,7 +96,7 @@ When a new client connects QuickBooks, `/bootstrap` reads the last 12 months of 
 
 ### Confidence Lifecycle
 ```
-Connect QB → /bootstrap (cap 5) → Real usage upvotes (+1 each) → CPA corrections override → Confidence grows
+Connect QB → Onboarding (cap 5) → Real usage upvotes (+1 each) → CPA corrections override → Confidence grows
 ```
 
 The upvote system drives confidence-based decisions:
@@ -117,14 +109,13 @@ The upvote system drives confidence-based decisions:
 
 ```
 Plugin (this repo)
-  ├── agents/     → Accountant + CFO personas
-  ├── skills/     → Bookkeeping + Financial Analysis expertise
-  ├── commands/   → 18 user-facing slash commands
-  └── hooks/      → Safety validation guards
+  ├── skills/     → 9 bookkeeping + financial analysis skills
+  ├── hooks/      → Safety validation guards on every QB write
+  └── .mcp.json   → DeepLedger MCP connector
   ↓ Streamable HTTP
 MCP Server (deepledger-mcp, hosted on Render at https://mcp.deepledger.ai/mcp)
-  ├── 24 tools (17 QuickBooks + 7 platform)
-  ├── Agent infrastructure (work queue, memory, documents, bank feed)
+  ├── 23 tools (17 QuickBooks + 6 platform)
+  ├── Agent infrastructure (tasks, memory, documents, bank feed, close runs)
   └── Supabase PostgreSQL backend
 ```
 
