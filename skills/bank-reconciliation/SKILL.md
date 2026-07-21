@@ -86,8 +86,8 @@ Run this first to find what needs fixing before touching the reconciliation scre
 ## Workflow: Resolve Uncategorized Flags
 
 1. **Fetch transaction details** — `qbFetchTransactions` report scan (accountId + dates) to find entries in "Ask My Accountant" or "Uncategorized"
-2. **Check memory** — `agentMemory` for vendor-to-account mapping
-3. **Re-categorize if confident** — update with the correct account
+2. **Infer the account** — `qbFetchTransactions` 6-month scan for the vendor and apply the consistency rule; check `agentMemory` `policies`/`patterns` for client rules
+3. **Re-categorize if the rule passes** — update with the correct account
 4. **Escalate if uncertain** — `tasks(operation="create")` with `aiReasoning` explaining what's unknown
 
 ## Workflow: Complete Reconciliation in QB Online (Browser)

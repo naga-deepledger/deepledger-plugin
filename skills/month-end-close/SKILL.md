@@ -148,7 +148,7 @@ This creates the close run in the portal and sets status to `in_progress`.
 - [ ] Prior month accruals reversed before recording new ones
 - [ ] All adjusting entries default to `status: "proposed"` — CPA approves
 - [ ] Journal Entry debits = credits for every entry
-- [ ] User confirmation before posting any adjusting entry
+- [ ] Adjusting entries posted only when user-requested or CPA-approved — otherwise they stay `proposed`
 - [ ] Portal updated after every step (incremental updates)
 
 ## Common Mistakes to Avoid

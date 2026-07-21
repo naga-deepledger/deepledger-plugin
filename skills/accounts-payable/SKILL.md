@@ -42,13 +42,13 @@ For immediate-pay purchases with no bill: `qbExpense` records the payment direct
 ## Workflow: Enter a Bill
 
 1. **Lookup** — `qbMasterData` for vendor ID and expense account IDs
-2. **Check memory** — `agentMemory` for vendor-to-account mapping and typical amounts
+2. **Check memory** — `agentMemory` for client `policies` and recurring `patterns`; the vendor's account comes from QB history (consistency rule), never a stored mapping
 3. **Duplicate check** — `qbFetchTransactions(transactionType="Bill", outstandingOnly=true, entityId=vendorId)` to verify no existing bill for same vendor+amount
 4. **Build bill** — Set `vendorId`, `txnDate`, `dueDate`, `lines` with account/amount
-5. **Confirm** — Show: vendor, total, due date, expense categories
+5. **Decide** — Proceed if user-requested, CPA-approved (use `effectiveCategory` verbatim), or history-consistent (consistency rule — see record-transactions skill); otherwise create a CPA task. Show: vendor, total, due date, expense categories
 6. **Record** — `qbBill`
 7. **Attach** — `qbAttachFile` (entityType = "Bill") — fetch from portal, local file, drive, or user upload; preferred for audit-ready books
-8. **Learn** — `agentMemory` upvote vendor mapping
+8. **Learn** — if the charge is now confirmed recurring (2+ occurrences), write an `agentMemory` `patterns` entry (vendor, amount range, frequency, account)
 
 ## Workflow: Pay a Bill
 
@@ -59,7 +59,7 @@ For immediate-pay purchases with no bill: `qbExpense` records the payment direct
 5. **Partial payments** — Pay less than the full bill amount; the bill remains partially outstanding
 6. **Multiple bills** — Pay several bills to one vendor in a single BillPayment using the `bills` array
 7. **Attach** — `qbAttachFile` (entityType = "BillPayment") — remittance advice or bank confirmation; preferred for audit-ready books
-8. **Confirm** — Show: vendor, bills being paid, total, payment account
+8. **Decide** — The bill already encodes the account, so no re-inference: proceed if user-requested or CPA-approved. Show: vendor, bills being paid, total, payment account
 
 ## Workflow: Record an Expense (Immediate Payment)
 
@@ -102,8 +102,8 @@ When a vendor issues a credit or refund:
 - [ ] Duplicate check — no existing bill or expense for same vendor+amount+date
 - [ ] Check for outstanding bills before recording an expense
 - [ ] Source account differs from category account on expense lines
-- [ ] User confirmation before recording
-- [ ] Agent memory updated after successful recording
+- [ ] Decide gate passed — user-requested, CPA-approved, or history-consistent; otherwise a CPA task created (user confirmation only for duplicate/anomaly/wrong-type/void interrupts)
+- [ ] Newly confirmed recurring charges written as `patterns` entries
 
 ## Common Mistakes to Avoid
 

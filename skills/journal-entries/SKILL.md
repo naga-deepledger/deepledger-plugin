@@ -21,7 +21,7 @@ Activate when the user wants to:
 1. **Lookup** — `qbMasterData` for account IDs, class/location IDs if needed
 2. **Duplicate Check** — `qbFetchTransactions(transactionType="JournalEntry")` matching date and total amount
 3. **Verify Balance** — Ensure total Debits exactly equal total Credits
-4. **Confirm** — Show the proposed entry: date, accounts, debits, credits, and memo
+4. **Decide** — Proceed if user-requested, CPA-approved, or consistent with prior-period entries (recurring accruals, depreciation); otherwise create a CPA task. Show the proposed entry: date, accounts, debits, credits, and memo
 5. **Record** — `qbJournalEntry` with the balanced lines
 6. **Attach** — `qbAttachFile` (entityType = "JournalEntry") — supporting schedule, approval email, or source doc from portal, local file, drive, or user upload; preferred for audit-ready books
 7. **Rule** — Include a descriptive `memo` detailing the purpose of the entry
@@ -58,4 +58,4 @@ If the error is in a closed period, do not modify the original transaction:
 - [ ] Journal Entry debits = credits exactly
 - [ ] Duplicate check completed before recording
 - [ ] Appropriate memo included for audit trail
-- [ ] User confirmation obtained before creating
+- [ ] Decide gate passed — user-requested, CPA-approved, or consistent with prior periods; otherwise a CPA task created (user confirmation only for duplicate/anomaly/wrong-type/void interrupts)

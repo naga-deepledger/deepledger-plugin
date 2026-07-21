@@ -36,7 +36,7 @@ For immediate-pay sales with no invoice: `qbSalesReceipt` → Undeposited Funds 
 2. **Check memory** — `agentMemory` for customer billing patterns (typical items, amounts, terms)
 3. **Duplicate check** — `qbFetchTransactions(transactionType="Invoice", outstandingOnly=true, entityId=customerId)` to verify no duplicate
 4. **Build invoice** — Set `customerId`, `txnDate`, `dueDate`, `lines` with items/amounts
-5. **Confirm** — Show the user: customer, total, due date, line items
+5. **Decide** — Proceed if user-requested, CPA-approved (use `effectiveCategory` verbatim), or history-consistent (consistency rule — see record-transactions skill); otherwise create a CPA task. Show: customer, total, due date, line items
 6. **Record** — `qbInvoice` to create
 7. **Attach** — `qbAttachFile` (entityType = "Invoice") — signed contract, PO, or supporting doc from portal, local file, drive, or user upload; preferred for audit-ready books
 8. **Optional** — Set `emailStatus: "NeedToSend"` to auto-email the invoice from QB
@@ -49,7 +49,7 @@ For immediate-pay sales with no invoice: `qbSalesReceipt` → Undeposited Funds 
 4. **Partial payments** — If payment is less than invoice total, apply the amount received; the invoice stays partially outstanding
 5. **Overpayments** — QB creates an unapplied credit; the `unappliedAmount` in the response shows the excess
 6. **Attach** — `qbAttachFile` (entityType = "Payment") — bank remittance or payment confirmation; preferred for audit-ready books
-7. **Update memory** — `agentMemory` upvote customer mapping
+7. **Update memory** — if this income stream is now confirmed recurring (2+ occurrences), write an `agentMemory` `patterns` entry (customer, amount range, frequency, account)
 
 ## Workflow: Deposit to Bank
 
@@ -93,8 +93,8 @@ When cash must be returned to the customer:
 - [ ] Duplicate check via `qbFetchTransactions` — no matching open invoice
 - [ ] Check for existing open invoices before creating new ones for same customer/service
 - [ ] Verify payment amount matches or is less than outstanding balance
-- [ ] User confirmation before recording
-- [ ] Agent memory updated after successful recording
+- [ ] Decide gate passed — user-requested, CPA-approved, or history-consistent; otherwise a CPA task created (user confirmation only for duplicate/anomaly/wrong-type/void interrupts)
+- [ ] Newly confirmed recurring income streams written as `patterns` entries
 
 ## Common Mistakes to Avoid
 

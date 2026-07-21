@@ -62,7 +62,7 @@ Every QuickBooks write operation is protected by a 3-step protocol enforced via 
 
 1. **Lookup** — `qbMasterData` to resolve vendor/customer and account IDs
 2. **Duplicate check** — `qbFetchTransactions` to verify no duplicate exists
-3. **Confirm** — Explicit user confirmation before writing
+3. **Decide** — proceed only if user-requested, CPA-approved, or history-consistent (consistency rule); otherwise escalate as a CPA task. User confirmation is reserved for interrupts: duplicates, amount anomalies, wrong-type guards, voids
 
 Additional guards:
 - Transaction-type guards catch wrong-tool writes (Expense vs BillPayment, Deposit vs ReceivePayment, Invoice vs SalesReceipt)
@@ -75,35 +75,24 @@ There is no batch tool — every transaction is recorded individually with the a
 
 ## Agent Memory
 
-The plugin uses `agentMemory` to learn client-specific patterns over time:
+The plugin uses `agentMemory` for durable per-client knowledge — never for vendor→account mappings, which are inferred in realtime from QB history:
 
 | Type | Purpose | Example |
 |------|---------|---------|
-| `vendor` | Vendor-to-account mappings with confidence (upvotes) | "Office Depot → Office Supplies (6 upvotes)" |
-| `customer` | Customer-to-income account mappings | "Client ABC → Consulting Income" |
-| `client` | Client preferences and special rules | "All Uber rides go to Travel" |
-| `worklog` | Autonomous loop state for crash recovery | Cycle count, status, last timestamp |
+| `patterns` | Confirmed recurring charges/income seen 2+ times (vendor, amount range, frequency, account) | "AWS monthly invoice ~$800 → 6030 Cloud Hosting" |
+| `policies` | Accounting rules — explicit CPA/client instructions, or agent-observed policies citing QBO evidence | "Capitalize fixed assets >$2,500 — client policy" |
+| `general` | Lasting client context not available in QuickBooks | "Fiscal year ends March 31" |
+| `system` | Machine-written app state rendered by the portal (hidden from the CPA memory page) | `bootstrap_status`, `latest_forecast` |
 
-Memory naming: `{type}_{clientName}_{entityName}` (e.g., `vendor_acme_office-depot`)
+### Categorization: realtime, not stored
 
-### Bootstrap (First-Time Learning)
+Vendor/customer categorization comes from QB history at decision time, not from stored mappings. The decide gate proceeds only when one of these holds:
 
-When a new client connects QuickBooks, the client-onboarding skill reads the last 12 months of transactions and seeds memory automatically:
-- Extracts vendor → account, customer → income, recurring patterns, transfer routes
-- Caps every mapping at **5 upvotes** — the agent must earn higher trust through real-time accuracy
-- Shows the full summary to the CPA for review before activating
-- Tags all bootstrap memories with `source: "bootstrap"` for traceability
+1. The user explicitly requested or confirmed the exact transaction
+2. A CPA approved it via task (`effectiveCategory` used verbatim)
+3. The **consistency rule** passes on the entity's 6-month history: ≥3 transactions, dominant account ≥70%, no runner-up ≥20%, amount within 5× median
 
-### Confidence Lifecycle
-```
-Connect QB → Onboarding (cap 5) → Real usage upvotes (+1 each) → CPA corrections override → Confidence grows
-```
-
-The upvote system drives confidence-based decisions:
-- **5+ upvotes**: Auto-categorize (high confidence)
-- **3-4 upvotes**: Auto-categorize with note (medium)
-- **1-2 upvotes**: Proceed with caution (low)
-- **0 upvotes**: Flag for CPA review (new/unknown)
+Anything else is escalated as a CPA task — the agent never guesses an account. Because inference is realtime, a CPA recategorization in QuickBooks takes effect on the very next transaction; there is no stale mapping to correct.
 
 ## Architecture
 

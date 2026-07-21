@@ -1,11 +1,11 @@
 ---
 name: bank-feed-processing
-description: Process bank feed transactions — categorize, match, record, or flag for review using agent memory and confidence scoring. Use when the user mentions bank feed, bank transactions, categorize transactions, or auto-categorize.
+description: Process bank feed transactions — categorize, match, record, or flag for review using QB history and the consistency rule. Use when the user mentions bank feed, bank transactions, categorize transactions, or auto-categorize.
 ---
 
 # Bank Feed Processing Skill
 
-Process unrecorded bank and credit card transactions from the connected bank feed. Categorize using agent memory, match to existing records, and flag uncertain items for CPA review.
+Process unrecorded bank and credit card transactions from the connected bank feed. Categorize using QB history, match to existing records, and flag uncertain items for CPA review.
 
 ## Trigger
 
@@ -19,22 +19,23 @@ Activate when the user wants to:
 ## Prerequisites
 
 ### Bootstrap Check
-Before processing, verify: `agentMemory(operation="read", type="worklog")`
+Before processing, verify: `agentMemory(operation="read", type="system", title="bootstrap_status")`
 - If client is NOT bootstrapped → warn: "This client hasn't been bootstrapped — most vendors are unknown. Run bootstrap first for better accuracy."
-- Without bootstrap, most transactions will be flagged (low confidence).
+- Without bootstrap, most transactions will be flagged (no matching history).
 
-## The Confidence Model
+## The Decide Gate
 
-Each bank feed transaction is evaluated against agent memory:
+Record a transaction directly ONLY when one of these holds:
 
-| Upvotes | Confidence | Action |
-|---------|------------|--------|
-| 5+ | High | Record directly with top-voted account |
-| 3-4 | Medium | Record with note, mention categorization |
-| 1-2 | Low | Proceed with caution, consider flagging |
-| 0 | None | Flag for CPA review |
+| Condition | Source | Action |
+|-----------|--------|--------|
+| CPA approved via task | `tasks(operation="list")` → `effectiveCategory` | Record verbatim, complete the task |
+| Outstanding document exists | `qbFetchTransactions(outstandingOnly=true)` | `qbBillPayment` / `qbReceivePayment` — the document already encodes the account |
+| History-consistent | `qbFetchTransactions` 6-month entity scan | Record with the dominant account |
 
-Confidence comes from: bootstrap seeding (capped at 5), CPA approvals, and real-time upvotes after each successful recording.
+**Consistency rule**: use the dominant account ONLY IF ≥3 transactions, dominant share ≥70%, no runner-up ≥20%, and amount within 5× the median.
+
+Anything else → flag for CPA review (`tasks` create). Never guess an account. User confirmation is reserved for interrupts: potential duplicates, amount anomalies, wrong-type guards, voids.
 
 ## Workflow: Process Bank Feed
 
@@ -48,26 +49,22 @@ Returns unprocessed transactions enriched with agent memory matches, document li
 
 For each transaction:
 
-1. **Check enrichment** — Does the bank feed response include a memory match?
+1. **Check `alreadyFlagged`** — a task already exists for this transaction → skip it (it's the CPA's turn)
 2. **Check for existing records** — Before recording:
    - Expenses/debits: `qbFetchTransactions(transactionType="Bill", outstandingOnly=true, entityId=vendorId)` → if outstanding bill exists, use `qbBillPayment` not `qbExpense`
    - Deposits/credits: `qbFetchTransactions(transactionType="Invoice", outstandingOnly=true, entityId=customerId)` → if outstanding invoice exists, use `qbReceivePayment` not `qbDeposit`
-3. **Duplicate check** — `qbFetchTransactions` with vendor + date (±3 days) + amount
-4. **Anomaly check** — If amount is 3x outside the learned range for this vendor, flag regardless of confidence
+3. **Duplicate check** — `qbFetchTransactions` with vendor + date (±15 days) + amount
+4. **Anomaly check** — If amount is 3x outside the historical range for this vendor, flag even if the gate passes
 
 ### Step 3: Record or Flag
 
-**High confidence (5+ upvotes):**
+**Gate passes (CPA-approved, document match, or history-consistent):**
 1. `qbMasterData` — lookup IDs
-2. Record with the top-voted account mapping
-3. `agentMemory` — upvote the mapping
+2. Record — the CPA's `effectiveCategory` verbatim, the outstanding document's account, or the dominant historical account
+3. `agentMemory` — write a `patterns` entry if the charge is now confirmed recurring (2+ occurrences)
 4. `tasks(operation="complete", taskNumber, qbTransactionId)` — prevent re-processing
 
-**Medium confidence (3-4 upvotes):**
-1. Same as high, but include a note in the response about the categorization
-2. Upvote on success
-
-**Low/No confidence:**
+**Gate fails:**
 1. `tasks(operation="create")` with specific `aiReasoning`:
    - "New vendor not in memory"
    - "Amount $X is 3x the usual $Y for this vendor"
@@ -104,7 +101,7 @@ Include a table of flagged items with reasoning.
 When the user wants to see transactions before recording:
 
 1. `bankFeed(action="fetch")` — pull all unprocessed
-2. Present in a table with: date, description, amount, suggested category, confidence level
+2. Present in a table with: date, description, amount, suggested category, gate outcome (record / flag)
 3. Let the user pick which to process
 4. Do NOT record anything until explicitly told
 
@@ -132,7 +129,7 @@ CPA-approved tasks take priority:
 - [ ] Duplicate check run for every transaction
 - [ ] Anomaly check (3x outside learned range) applied
 - [ ] CPA-approved items processed first and categories preserved
-- [ ] Agent memory upvoted after each successful recording
+- [ ] Newly confirmed recurring charges written as `patterns` entries
 - [ ] Transactions marked as recorded to prevent re-processing
 
 ## Common Mistakes to Avoid
@@ -142,4 +139,4 @@ CPA-approved tasks take priority:
 - Skipping the bootstrap check → floods the CPA task list with escalations
 - Not marking transactions as recorded → they appear again in the next fetch
 - Overriding a CPA-approved category with a different agent guess
-- Ignoring amount anomalies just because the vendor has high upvotes
+- Ignoring amount anomalies just because the vendor has strong history
