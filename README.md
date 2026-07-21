@@ -49,6 +49,7 @@ Just ask in plain language — the matching skill activates automatically:
 | `client-onboarding` | Onboard a new client — assess the books, seed policies/patterns/general memory with CPA review |
 | `bank-feed-processing` | Categorize, match, record, or flag bank feed transactions |
 | `bank-reconciliation` | Reconcile bank/CC accounts, fix duplicates and uncategorized items |
+| `record-transactions` | The go-to recording guide — tool selection, decide gate, edge cases |
 | `accounts-payable` | Bills, vendor payments, vendor credits, AP aging |
 | `accounts-receivable` | Invoices, customer payments, credits, AR aging, collections |
 | `journal-entries` | Journal entries, adjusting entries, transfers, corrections |
@@ -98,7 +99,7 @@ Anything else is escalated as a CPA task — the agent never guesses an account.
 
 ```
 Plugin (this repo)
-  ├── skills/     → 9 bookkeeping + financial analysis skills
+  ├── skills/     → 10 bookkeeping + financial analysis skills
   ├── hooks/      → Safety validation guards on every QB write
   └── .mcp.json   → DeepLedger MCP connector
   ↓ Streamable HTTP
