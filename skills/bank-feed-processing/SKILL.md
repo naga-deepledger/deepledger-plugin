@@ -18,10 +18,10 @@ Activate when the user wants to:
 
 ## Prerequisites
 
-### Bootstrap Check
-Before processing, verify: `agentMemory(operation="read", type="system", title="bootstrap_status")`
-- If client is NOT bootstrapped → warn: "This client hasn't been bootstrapped — most vendors are unknown. Run bootstrap first for better accuracy."
-- Without bootstrap, most transactions will be flagged (no matching history).
+### Onboarding Check
+Before processing, check: `agentMemory(operation="read", type="system", title="bootstrap_status")`
+- Not onboarded → mention it, don't block: categorization works from live QB history either way; onboarding adds the client policies and confirmed patterns that history can't express.
+- Also read `policies` — CPA rules override the history signal.
 
 ## The Decide Gate
 
@@ -136,7 +136,7 @@ CPA-approved tasks take priority:
 
 - Recording an expense when an outstanding bill exists for the same vendor → use BillPayment
 - Recording a deposit when an outstanding invoice exists → use ReceivePayment
-- Skipping the bootstrap check → floods the CPA task list with escalations
+- Skipping the `policies` read → missing CPA rules that override the history signal
 - Not marking transactions as recorded → they appear again in the next fetch
 - Overriding a CPA-approved category with a different agent guess
 - Ignoring amount anomalies just because the vendor has strong history

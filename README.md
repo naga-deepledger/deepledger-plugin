@@ -40,13 +40,13 @@ Just ask in plain language — the matching skill activates automatically:
 "Close the books for June"
 ```
 
-> **First time?** Always onboard the client first (client-onboarding skill). It reads existing QuickBooks transactions and learns vendor/account patterns so the agent is accurate from day one. Without it, every vendor is unknown and gets flagged for CPA review.
+> **First time?** Run the client-onboarding skill once per client. It assesses the books and seeds durable memory — client policies, confirmed recurring patterns, lasting context — with CPA review. Categorization works without it (accounts are inferred in realtime from QB history), but onboarding gives the agent the rules and context history can't express.
 
 ## Skills
 
 | Skill | What it covers |
 |-------|----------------|
-| `client-onboarding` | Bootstrap a new client by learning from historical QuickBooks data |
+| `client-onboarding` | Onboard a new client — assess the books, seed policies/patterns/general memory with CPA review |
 | `bank-feed-processing` | Categorize, match, record, or flag bank feed transactions |
 | `bank-reconciliation` | Reconcile bank/CC accounts, fix duplicates and uncategorized items |
 | `accounts-payable` | Bills, vendor payments, vendor credits, AP aging |

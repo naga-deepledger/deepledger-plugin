@@ -1,50 +1,70 @@
 ---
 name: client-onboarding
-description: Bootstrap a new client by analyzing historical QuickBooks data to seed the AI agent's memory. Use when the user mentions bootstrapping, setting up a new client, or learning from history.
+description: Onboard a newly connected client — assess the books, seed policies/patterns/general memory from QuickBooks history with CPA review, and record bootstrap status. Use when the user mentions bootstrapping, onboarding, setting up a new client, or learning from history.
 ---
 
 # Client Onboarding Skill
 
-Extract historical transactions to learn vendor mappings, customer income accounts, and recurring patterns. Seed the agent's memory so it operates accurately from day one.
+Assess a newly connected client's books and seed durable memory (`policies`, `patterns`, `general`) from QuickBooks history. Onboarding is an accelerant, not a prerequisite: categorization is always inferred in realtime from QB history via the consistency rule — never from stored mappings — so the agent is accurate with or without it. What onboarding adds is the context history can't express on its own: client rules, confirmed recurring streams, and durable facts.
 
 ## Trigger
 
 Activate this skill when the user wants to:
-- Bootstrap a new client
+- Onboard or bootstrap a new client
 - Set up a newly connected QuickBooks account
 - Learn from existing QuickBooks history
 - Re-run the onboarding analysis
 
-## Workflow: Client Bootstrap (First-Time Setup)
+## Workflow: Client Onboarding (Run Once)
 
-Run once when a new client connects QuickBooks. Seeds agent memory from historical transactions so the agent is accurate from day one.
+### 1. Pre-check
+`agentMemory(operation="read", type="system", title="bootstrap_status")` — skip if already onboarded, unless the user asks to re-run. (Batch writes skip existing org+tag+title rows, so a re-run never duplicates.)
 
-### Pre-check
-- `agentMemory(operation="read", type="bootstrap_status")` — skip if already bootstrapped, unless user specifically asks to re-run.
+### 2. Assess the books
+- `qbMasterData` — chart of accounts, vendors, customers, items; note entity structure, account numbering, class/location usage
+- `qbReports` — P&L (current + prior period) and Balance Sheet for a baseline; note uncategorized/Ask-My-Accountant balances and anything unreconciled
+- `qbFetchTransactions` — report scans over the last 6 months (matches the consistency-rule window; extend to 12 on request for quarterly/annual patterns)
 
-### Extract
-Pull all transactions from the last 12 months (configurable) using `qbFetchTransactions` for each type: Expense, Bill, BillPayment, Invoice, SalesReceipt, ReceivePayment, Deposit, JournalEntry, Transfer.
+### 3. Identify memory candidates
+From the scans, propose entries — analysis only, no writes yet:
 
-### Analyze
-For each transaction, extract:
-- **Vendor mappings**: vendor → expense account, transaction type, frequency, amount range
-- **Customer mappings**: customer → income account, transaction type, frequency, amount range
-- **Recurring patterns**: repeated JEs (depreciation, accruals) with consistent amounts
-- **Transfer routes**: common account-to-account transfer paths
+| Type | What qualifies | Example |
+|------|----------------|---------|
+| `patterns` | Recurring charge/income confirmed **2+ times**: vendor/source, amount range, frequency, QB account | "AWS monthly invoice ~$800 → 6030 Cloud Hosting" |
+| `policies` | Consistent treatment backed by QBO evidence (agent-observed), or a rule the CPA states during onboarding | "Owner codes all meals to 6200 Meals & Entertainment (~$400/mo across 6 months)" |
+| `general` | Durable client context not in QB or derivable from it | "Fiscal year ends March 31"; "3 locations: Austin, Dallas, Houston" |
 
-### Present to CPA
-Show a summary table of all learned mappings. Flag low-frequency vendors (1-2 occurrences) as potential one-offs. **Wait for CPA confirmation before activating.**
+The write bar for every candidate: **"Would a CPA want this note 6 months from now?"** Do NOT propose: vendor→account mappings (realtime QB history covers those), one-off transactions, estimates or guesses, standard accounting rules.
 
-### Seed Memory
-Write each mapping to `agentMemory` with:
-- `upvotes`: capped at **5** regardless of historical frequency — the agent must earn higher trust through real-time usage
-- `source: "bootstrap"` — tags the memory as bootstrap-derived so it can be distinguished from real-time learning
-- `amountRange`: min/max/avg from history — used for anomaly detection (flag if new transaction is 3x outside range)
+### 4. Present to CPA
+Show the proposed entries in a table — type, title, evidence — before writing anything. **Wait for CPA confirmation.** The CPA may also dictate explicit rules here (capitalization threshold, standing categorizations); capture them as `policies`.
 
-### Mark Complete
-Write `bootstrap_status` to memory with date, counts, and `cpaReviewed: true`.
+### 5. Seed memory (batch write)
+- Agent-observed entries in one call: `agentMemory(operation="write", entries=[{type, title, content}, ...])` — up to 50 per call; existing rows are skipped and returned in `skipped[]`
+- Agent-observed `policies` content must cite the QBO evidence and end with: `✦ AI generated from QBO data — <date>`
+- CPA-dictated policies go in a **separate** write with `createdBy="cpa"` (createdBy applies per call, not per entry)
+
+### 6. Mark complete
+`agentMemory(operation="write", title="bootstrap_status", content=...)` — auto-routed to the hidden `system` tag. Content: date, entry counts by type, CPA reviewer.
+
+### 7. Handoff summary
+Report what was written and skipped, plus books-assessment flags worth immediate attention: uncategorized balances, unreconciled accounts, aged AR/AP concentrations.
 
 ## Safety Checklist
-- [ ] Verify bootstrap hasn't already been run (prevent duplicate seeding)
-- [ ] Present mappings to CPA for approval before committing to agent memory
-- [ ] Cap bootstrap upvotes at 5
+
+- [ ] `bootstrap_status` checked before running — no duplicate onboarding
+- [ ] Every proposed entry passes the write bar (CPA-useful in 6 months)
+- [ ] No vendor→account mappings written — categorization stays realtime via the consistency rule
+- [ ] CPA reviewed and confirmed the proposed entries before the batch write
+- [ ] Agent-observed policies cite QBO evidence and carry the AI-generated footer
+- [ ] CPA-dictated policies written with `createdBy="cpa"`
+- [ ] `bootstrap_status` written on completion
+
+## Common Mistakes to Avoid
+
+- Seeding vendor→account mappings "for accuracy" → the server infers accounts in realtime from QB history; stored mappings go stale and drift from the ledger
+- Writing a pattern from a single occurrence → patterns require 2+ confirmed sightings
+- Skipping CPA review → unvetted entries pollute the CPA-facing Memory page
+- Using legacy memory types (`vendor`, `customer`, `client`, `worklog`) → invalid; the only tags are `patterns`, `policies`, `general`, `system`
+- Mixing CPA-dictated and agent-observed policies in one batch call → `createdBy` is per call; they need separate writes
+- Treating onboarding as required before bank-feed processing → the feed categorizes from live history either way; onboarding just adds policy/pattern context
