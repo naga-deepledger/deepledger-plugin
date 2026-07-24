@@ -7,6 +7,18 @@ description: Execute the month-end close workflow — reconcile accounts, review
 
 Run the structured month-end close process: reconcile all accounts, clear outstanding items, record adjusting entries, review financial statements, and verify the books are ready for CPA review.
 
+Everything you write via `closeRun` renders on the portal's **Close Sheet** — the CPA reviews the close as annotated financial statements and signs at the bottom. You prove; the CPA judges; the document records. (Mirrors the `month_end_closing` guide in deepledger-mcp — keep in sync.)
+
+## The Close Sheet data contract
+
+- **Anchors** pin checks/entries to statement lines: `pl:<line_id>` | `bs:<line_id>` | `tie:<tie_id>`. Tie ids: `trial_balance, bank_rec, suspense, undeposited, cutoff, ap_ar, payroll, sales_tax, period_lock, recurring`. Every `warning`/`action_needed` check needs an anchor; use `tie:*` when it isn't a statement line.
+- **`statement_lines`** (in `setFinancials`) are mandatory in practice: every P&L/balance-sheet line with a stable snake_case `id`, `label`, `group`, `amount`, `prior`. Without them the CPA gets a totals-only fallback. Keep ids stable across months.
+- **`detail` is first-person prose to the reviewer**: "I matched 96 of 97 transactions — one $2,150 deposit on Jun 27 has no matching entry." Never machine-voice.
+- **Observations**: line variances >15% get a check with `kind: "observation"` anchored to the line, explaining the cause in one sentence. Observations never block sign-off.
+- **Entries** carry `anchors` (lines they move), `reasoning` (first person), `source_ref`, and `auto_reverse_on` for accruals.
+- **Never send** `waived`/`handoff`/`acked` on checks — those are portal-written; the tool preserves them on merge (cleared automatically when a check passes).
+- **After the close**: CPA actions come back as tasks — approved entries to post, and close-fix handoffs (payload has `close_run_id` + `check_id` + `instructions`); after fixing one, re-run that check via `updateChecks` so the sheet re-scores. Write durable waiver/rejection reasons to `agentMemory` policies.
+
 ## Trigger
 
 Activate when the user wants to:
@@ -96,11 +108,11 @@ This creates the close run in the portal and sets status to `in_progress`.
 2. **Balance Sheet** — `qbReports(reportType="BalanceSheet")` — verify Assets = Liabilities + Equity
 3. **Cash Flow** — `qbReports(reportType="CashFlow")` — reconcile to cash change on Balance Sheet
 4. **Flag** — Variances > 5% in gross margin vs prior periods
-5. **Update portal**:
+5. **Update portal** (totals AND statement_lines — this step renders the Close Sheet):
    ```
    closeRun(operation="updateStep", step={id: "statements", ...})
-   closeRun(operation="setFinancials", financials={revenue, expenses, net_income, ...})
-   closeRun(operation="updateChecks", checks=[{id: 9, ...}, {id: 10, ...}])
+   closeRun(operation="setFinancials", financials={revenue, ..., statement_lines: {income: [...], balance: [...]}})
+   closeRun(operation="updateChecks", checks=[{id: 9, anchor: "pl:<line>", ...}, {id: 10, anchor: "tie:cutoff", ...}, ...observation checks for >15% variances])
    ```
 
 ## Step 6: Final Trial Balance
