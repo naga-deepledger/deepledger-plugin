@@ -54,7 +54,7 @@ For each transaction:
    - Expenses/debits: `qbFetchTransactions(transactionType="Bill", outstandingOnly=true, entityId=vendorId)` → if outstanding bill exists, use `qbBillPayment` not `qbExpense`
    - Deposits/credits: `qbFetchTransactions(transactionType="Invoice", outstandingOnly=true, entityId=customerId)` → if outstanding invoice exists, use `qbReceivePayment` not `qbDeposit`
 3. **Duplicate check** — `qbFetchTransactions` with vendor + date (±15 days) + amount
-4. **Anomaly check** — If amount is 3x outside the historical range for this vendor, flag even if the gate passes
+4. **Anomaly check** — If amount is >5× the historical median for this vendor (charter §6 anomaly rule), flag even if the gate passes
 
 ### Step 3: Record or Flag
 
@@ -62,12 +62,12 @@ For each transaction:
 1. `qbMasterData` — lookup IDs
 2. Record — the CPA's `effectiveCategory` verbatim, the outstanding document's account, or the dominant historical account
 3. `agentMemory` — write a `patterns` entry if the charge is now confirmed recurring (2+ occurrences)
-4. `tasks(operation="complete", taskNumber, qbTransactionId)` — prevent re-processing
+4. **Close out (required)** — task items: `tasks(operation="complete", taskNumber, qbTransactionId)`; direct recordings with no task: `bankFeed(action="markRecorded", tellerTransactionId, qbTransactionId)`. Unstamped items reappear in the next sweep.
 
 **Gate fails:**
 1. `tasks(operation="create")` with specific `aiReasoning`:
    - "New vendor not in memory"
-   - "Amount $X is 3x the usual $Y for this vendor"
+   - "Amount $X is over 5× the historical median $Y for this vendor"
    - "Multiple possible categories: [list]"
    - "Description is ambiguous: [description]"
 2. Include `suggestedCategory` when you have a reasonable guess
@@ -127,7 +127,8 @@ CPA-approved tasks take priority:
 - [ ] Bootstrap status checked before processing
 - [ ] Outstanding bills/invoices checked before recording expenses/deposits
 - [ ] Duplicate check run for every transaction
-- [ ] Anomaly check (3x outside learned range) applied
+- [ ] Anomaly check (>5× historical median, charter §6) applied
+- [ ] Every recorded item closed out (tasks complete, or bankFeed markRecorded for direct recordings)
 - [ ] CPA-approved items processed first and categories preserved
 - [ ] Newly confirmed recurring charges written as `patterns` entries
 - [ ] Transactions marked as recorded to prevent re-processing

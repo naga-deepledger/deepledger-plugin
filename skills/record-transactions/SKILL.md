@@ -33,7 +33,7 @@ Every recording follows the same six steps — hooks enforce 1, 3, and 5:
 
 **When to pause for the user** — confirmation is reserved for interrupts, not routine writes:
 - Duplicate check returned potential matches → show them, get explicit "not a duplicate"
-- Amount anomaly (3x above average or under 1/3 the minimum for this entity)
+- Amount anomaly (>5× the historical median — charter §6 — or under 1/3 the minimum for this entity)
 - A wrong-type guard fires (e.g., outstanding bill exists but an Expense was requested)
 - Voids — `qbVoidTransaction` asks the human directly via elicitation; irreversible master-data choices (`accountType`)
 
@@ -101,7 +101,7 @@ Reads and workflow tools (reports, fetches, tasks, agentMemory, closeRun) never 
 
 **Source = category collision** — The source account (where money comes from) must differ from every line account (what it was for). Same account on both sides is a zero-net entry that breaks reconciliation.
 
-**Amount anomaly** — If the amount is 3x above the historical average (or below 1/3 the minimum) for this entity — from the 6-month scan or a `patterns` entry — confirm with the user even if the decide gate passes.
+**Amount anomaly** — If the amount is more than 5× the historical median (charter §6; or below 1/3 the minimum) for this entity — from the 6-month scan or a `patterns` entry — confirm with the user even if the decide gate passes.
 
 **Closed-period error** — Never modify or void in a closed period. Record a reversing journal entry in the current period (see journal-entries skill).
 
