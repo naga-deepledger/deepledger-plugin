@@ -74,7 +74,7 @@ Reads and workflow tools (reports, fetches, tasks, agentMemory, closeRun) never 
 | Moving money between own accounts (checking → savings) | `qbTransfer` |
 | Paying off the company credit card from the bank | `qbTransfer` (bank → CC account) |
 | Accruals, depreciation, reclassifications | `qbJournalEntry` (debits must equal credits) |
-| Quote or purchase order | `qbEstimate` / `qbPurchaseOrder` (non-posting — no ledger impact) |
+| Quote or purchase order | No posting tool exists (non-posting documents) — create one-offs in QB Online directly or escalate via `tasks`; recurring templates via `qbRecurringTransaction` (supports Estimate and PurchaseOrder types) |
 | Recurring template | `qbRecurringTransaction` |
 
 ## Edge Cases

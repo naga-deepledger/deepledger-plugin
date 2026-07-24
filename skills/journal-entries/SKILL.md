@@ -42,7 +42,7 @@ When correcting errors in the general ledger:
 ### Same Period Correction (Voiding)
 If the error is in the current, open period:
 1. `qbFetchTransactions` — find the incorrect transaction
-2. `qbVoidTransaction` — void it (preserves the audit trail, unlike delete)
+2. `qbVoidTransaction` — void it (preserves the audit trail, unlike delete). Voidable types: `BillPayment`, `Invoice`, `Payment`, `SalesReceipt`, `CreditMemo`, `Purchase`, `RefundReceipt`, `Transfer`. Journal entries themselves cannot be voided via tools — post a reversing entry instead (same as the prior-period flow below)
 3. Record the correct transaction using the appropriate skill
 
 ### Prior Period Correction (Reversing Entry)

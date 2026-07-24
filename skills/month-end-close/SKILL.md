@@ -145,7 +145,7 @@ This creates the close run in the portal and sets status to `in_progress`.
 | 6 | AR Accuracy | Open invoices match expectations |
 | 7 | Bank Reconciliation | All bank/CC accounts reconciled |
 | 8 | Recurring Transactions | All expected recurring items posted |
-| 9 | Large/Unusual Entries | No unexplained amounts > 2x average |
+| 9 | Large/Unusual Entries | No unexplained amounts > 5× historical median (charter §6) |
 | 10 | Revenue Recognition | Revenue in correct period |
 | 11 | Prepaid Expenses | Amortization entries recorded |
 | 12 | Depreciation | Fixed asset depreciation posted |

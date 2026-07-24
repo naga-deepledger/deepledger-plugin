@@ -40,7 +40,7 @@ Run this first to find what needs fixing before touching the reconciliation scre
 3. **Review for flags**:
    - **Duplicates** — same amount + date + vendor; high severity if > $1,000
    - **Uncategorized** — booked to "Ask My Accountant" or "Uncategorized"; high if > $500
-   - **Outliers** — amount exceeds 2 standard deviations from mean
+   - **Outliers** — amount more than 5× the entity's historical median (charter §6)
    - **Past-due** — transactions with `dueDate` older than 7 days (checks `dueDate` field, not QB cleared status)
 4. **Score** — compute 0–100 per account. Penalty: high = -5, medium = -3, low = -1
 
@@ -59,8 +59,8 @@ Run this first to find what needs fixing before touching the reconciliation scre
 
 1. **Fetch** — `bankFeed(action="fetch", accountId?, sinceDate?)`
 2. **For each transaction**:
-   - Check `agentMemory` for vendor/category mapping
-   - **Known vendor + category** → record using the correct tool (see table below)
+   - Check `agentMemory` for applicable `policies`/`patterns`, then pull the entity's 6-month QB history (`qbMasterData` + `qbFetchTransactions`) — categorization is realtime, never a stored mapping
+   - **Decide gate passes** (user-requested, CPA-approved, or history-consistent per charter §6) → record using the correct tool (see table below)
    - **Unknown or ambiguous** → `tasks(operation="create")` with reasoning
 3. **Duplicate check before recording** — `qbFetchTransactions` (report scan, same accountId + date range) to confirm it isn't already in QB
 
@@ -79,7 +79,8 @@ Run this first to find what needs fixing before touching the reconciliation scre
 1. **Pull both entries** — `qbFetchTransactions` to confirm details of each
 2. **Verify it's a true duplicate** — same amount, vendor, and purpose (two similar charges from one vendor can both be legitimate)
 3. **Check voidable type** — `qbVoidTransaction` supports: `BillPayment`, `Invoice`, `Payment`, `SalesReceipt`, `CreditMemo`, `Purchase`, `RefundReceipt`, `Transfer`
-   - `Bill`, `JournalEntry`, `Deposit`, `Expense`, `VendorCredit` cannot be voided via tools — flag for CPA to handle in QB
+   - Expenses recorded via `qbExpense` are `Purchase` entities in the QB API — void them with `transactionType="Purchase"`
+   - `Bill`, `JournalEntry`, `Deposit`, `VendorCredit` cannot be voided via tools — flag for CPA to handle in QB
 4. **Confirm with user** before voiding — preserves audit trail, unlike delete
 5. **Re-run** the health check (`qbFetchTransactions` scan) to verify the flag is cleared
 

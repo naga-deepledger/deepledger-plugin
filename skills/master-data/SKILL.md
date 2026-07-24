@@ -38,7 +38,7 @@ Use this before any transaction to get valid IDs.
 1. **Call** — `qbMasterData(entityTypes=["account","vendor","customer","item","class"])` (request only what you need)
 2. **Filter** — Pass `filter` to narrow by name when the list is long
 3. **Disambiguate** — If multiple similar names exist, show the user the options and confirm which one before proceeding
-4. **Cache in memory** — `agentMemory` to store vendor→account and customer→item mappings for future use
+4. **Never store mappings** — categorization truth is QB history fetched in real time (`qbFetchTransactions`); `agentMemory` holds only `policies`/`patterns`/`general` entries, never vendor→account or customer→item mappings (charter §8)
 
 ## Workflow: Get Vendor or Customer Details
 
@@ -54,7 +54,7 @@ When you need full contact, payment terms, or 1099 info:
 2. **Determine type** — Confirm the correct `accountType` (see Account Types table below); this cannot be changed after creation
 3. **Confirm** — Show the user: name, account type, account number (if any), parent account (if sub-account)
 4. **Create** — `qbMasterData(operation="create", entityType="account", name, accountType, accountNumber?, parentAccountId?)`
-5. **Verify** — Confirm the new account ID returned; save to `agentMemory` if it will be used frequently
+5. **Verify** — Confirm the new account ID returned (no need to memorize it — `qbMasterData` lookups are realtime)
 
 > `accountType` is **permanent** — it cannot be changed after the account is created. Always confirm with the user before creating.
 
@@ -113,7 +113,7 @@ Classes add a segmentation dimension (department, location, project) to transact
 - [ ] For items: correct `itemType` and linked account confirmed
 - [ ] `syncToken` fetched immediately before any update
 - [ ] User confirmation shown before create or update
-- [ ] New entity IDs saved to `agentMemory` if used in recurring workflows
+- [ ] No vendor→account or customer→item mappings written to `agentMemory` (QB history is the categorization truth — charter §8)
 
 ## Common Mistakes to Avoid
 
