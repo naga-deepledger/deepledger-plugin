@@ -54,7 +54,7 @@ Just ask in plain language — the matching skill activates automatically:
 | `accounts-receivable` | Invoices, customer payments, credits, AR aging, collections |
 | `journal-entries` | Journal entries, adjusting entries, transfers, corrections |
 | `master-data` | Chart of accounts, vendors, customers, items, classes, tax rates |
-| `month-end-close` | Full close workflow with the 16-point checklist |
+| `month-end-close` | Full close workflow — drafts the Close Sheet (anchored 16-point checks, line-level statements, proposed entries) for CPA sign-off in the portal |
 | `financial-analysis` | Reports, ratios, trends, CFO-level insights |
 
 ## Safety Model
