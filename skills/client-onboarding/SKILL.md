@@ -42,7 +42,7 @@ Show the proposed entries in a table — type, title, evidence — before writin
 ### 5. Seed memory (batch write)
 - Agent-observed entries in one call: `agentMemory(operation="write", entries=[{type, title, content}, ...])` — up to 50 per call; existing rows are skipped and returned in `skipped[]`
 - Agent-observed `policies` content must cite the QBO evidence and end with: `✦ AI generated from QBO data — <date>`
-- CPA-dictated policies go in a **separate** write with `createdBy="cpa"` (createdBy applies per call, not per entry)
+- Reviewer-dictated policies go in a **separate** write with `createdBy="reviewer"` (createdBy applies per call, not per entry)
 
 ### 6. Mark complete
 `agentMemory(operation="write", title="bootstrap_status", content=...)` — auto-routed to the hidden `system` tag. Content: date, entry counts by type, CPA reviewer.
@@ -57,7 +57,7 @@ Report what was written and skipped, plus books-assessment flags worth immediate
 - [ ] No vendor→account mappings written — categorization stays realtime via the consistency rule
 - [ ] CPA reviewed and confirmed the proposed entries before the batch write
 - [ ] Agent-observed policies cite QBO evidence and carry the AI-generated footer
-- [ ] CPA-dictated policies written with `createdBy="cpa"`
+- [ ] Reviewer-dictated policies written with `createdBy="reviewer"`
 - [ ] `bootstrap_status` written on completion
 
 ## Common Mistakes to Avoid
@@ -66,5 +66,5 @@ Report what was written and skipped, plus books-assessment flags worth immediate
 - Writing a pattern from a single occurrence → patterns require 2+ confirmed sightings
 - Skipping CPA review → unvetted entries pollute the CPA-facing Memory page
 - Using legacy memory types (`vendor`, `customer`, `client`, `worklog`) → invalid; the only tags are `patterns`, `policies`, `general`, `system`
-- Mixing CPA-dictated and agent-observed policies in one batch call → `createdBy` is per call; they need separate writes
+- Mixing reviewer-dictated and agent-observed policies in one batch call → `createdBy` is per call; they need separate writes
 - Treating onboarding as required before bank-feed processing → the feed categorizes from live history either way; onboarding just adds policy/pattern context
