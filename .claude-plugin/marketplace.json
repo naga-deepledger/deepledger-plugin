@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "deepledger",
-      "description": "Autonomous AI bookkeeper — records transactions, processes bank feeds, generates financial reports, and self-improves through pattern learning. QuickBooks Online integration via MCP.",
+      "description": "AI bookkeeper — records transactions, processes bank feeds, generates financial reports, and self-improves through pattern learning. QuickBooks Online integration via MCP.",
       "version": "2.0.0",
       "author": {
         "name": "DeepLedger",

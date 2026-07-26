@@ -1,6 +1,6 @@
 # DeepLedger Plugin
 
-Claude Code plugin for autonomous AI bookkeeping and financial analysis powered by QuickBooks Online.
+Claude Code plugin for AI bookkeeping and financial analysis powered by QuickBooks Online.
 
 The plugin is intentionally lean: **skills** (bookkeeping expertise that triggers on natural language), **hooks** (safety guards on every QuickBooks write), and the **DeepLedger MCP connector**. No slash commands or custom agents — just describe what you need.
 
